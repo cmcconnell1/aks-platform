@@ -1,0 +1,16 @@
+# Python package requirements for Azure AKS GitOps Platform scripts
+#
+# Install with: pip install -r scripts/requirements.txt
+
+# Azure SDK packages for setup-azure-credentials.py
+azure-cli>=2.40.0
+azure-identity>=1.12.0
+azure-mgmt-storage>=20.0.0
+azure-mgmt-authorization>=3.0.0
+
+# Azure Cost Management for azure-cost-monitor.py (optional - only needed for --actual mode)
+azure-mgmt-costmanagement>=4.0.0
+azure-mgmt-resource>=22.0.0
+
+# HTTP client for cost monitoring (optional)
+requests>=2.28.0

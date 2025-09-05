@@ -1,0 +1,229 @@
+# Azure AKS GitOps Platform
+
+A comprehensive Terraform-based GitOps platform for Azure Kubernetes Service, demonstrating production-ready DevOps practices, cloud security principles, and modern application deployment workflows.
+
+## Table of Contents
+
+- [Project Overview](#project-overview)
+- [Architecture](#architecture)
+- [Key Features](#key-features)
+- [What This Creates](#what-this-creates)
+- [Quick Start](#quick-start)
+- [Documentation](#documentation)
+- [Support](#support)
+
+## Project Overview
+
+This project showcases:
+- **Infrastructure as Code** using Terraform for Azure
+- **GitOps workflows** with ArgoCD for application deployment
+- **Containerization** with Docker and Kubernetes (AKS)
+- **CI/CD pipelines** with GitHub Actions
+- **Application Gateway Ingress Controller (AGIC)** for Azure-native ingress
+- **AI/ML platform** with JupyterHub, MLflow, and GPU support
+- **Cloud security** best practices and compliance
+- **Modular architecture** for reusable infrastructure components
+
+## Architecture
+
+```mermaid
+graph TB
+    subgraph "Terraform Infrastructure"
+        A[terraform/] --> B[environments/]
+        A --> C[modules/]
+        A --> D[main.tf]
+        A --> E[variables.tf]
+        A --> F[outputs.tf]
+        A --> G[terraform.tf]
+
+        B --> H[dev/]
+        B --> I[staging/]
+        B --> J[prod/]
+
+        C --> K[networking/]
+        C --> L[aks/]
+        C --> M[security/]
+        C --> N[container_registry/]
+        C --> O[monitoring/]
+        C --> P[gitops/]
+        C --> Q[ai_tools/]
+    end
+
+    style A fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style B fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+    style C fill:#e3f2fd,stroke:#0d47a1,stroke-width:2px
+    style D fill:#fff8e1,stroke:#ff8f00
+    style E fill:#fff8e1,stroke:#ff8f00
+    style F fill:#fff8e1,stroke:#ff8f00
+    style G fill:#fff8e1,stroke:#ff8f00
+
+    style H fill:#c8e6c9,stroke:#2e7d32
+    style I fill:#ffe0b2,stroke:#f57c00
+    style J fill:#ffcdd2,stroke:#c62828
+
+    style K fill:#bbdefb,stroke:#1565c0
+    style L fill:#c8e6c9,stroke:#388e3c
+    style M fill:#ffe0b2,stroke:#f57c00
+    style N fill:#e1bee7,stroke:#7b1fa2
+    style O fill:#fff9c4,stroke:#ffa000
+    style P fill:#b3e5fc,stroke:#0277bd
+    style Q fill:#f8bbd9,stroke:#c2185b
+```
+
+## Key Features
+
+### Infrastructure Components
+- **Virtual Networks** with proper subnetting and security groups
+- **Azure Kubernetes Service (AKS)** with auto-scaling and monitoring
+- **Application Gateway with AGIC** for Azure-native ingress and SSL termination
+- **Key Vault** for secrets management and SSL certificates
+- **Log Analytics** and comprehensive monitoring solutions
+- **Container Registry** with private endpoints for Docker images
+- **AI/ML node pools** with GPU support for machine learning workloads
+
+### Security Features
+- Network security groups and application security groups
+- Azure Active Directory integration
+- Role-based access control (RBAC)
+- Private endpoints for secure connectivity
+- Encryption at rest and in transit
+
+### DevOps & GitOps Practices
+- **GitOps workflows** with ArgoCD for declarative application management
+- **Automated Terraform** validation, planning, and deployment
+- **Multi-environment** deployment pipelines with approval gates
+- **Infrastructure drift detection** and automated alerting
+- **Security scanning** with Checkov and TFSec integration
+- **Cost optimization** monitoring with Infracost integration
+- **Automated CI/CD** with GitHub Actions workflows
+
+## What This Creates
+
+This Terraform configuration creates a **complete, production-ready AKS platform** including:
+
+### Core Infrastructure
+- **Resource Group** - Dedicated resource group for all resources
+- **Virtual Network** - Complete VNet with 4 subnets (AKS, App Gateway, Private Endpoints)
+- **AKS Cluster** - Multi-node pool cluster with system, user, and AI/ML (GPU) node pools
+- **Application Gateway** - Azure-native ingress with WAF v2 and SSL termination
+- **Container Registry** - Private container registry with private endpoints
+- **Key Vault** - Secrets and certificate management with SSL certificates
+- **cert-manager** - Automatic SSL certificate management with Let's Encrypt integration
+- **Monitoring** - Log Analytics, Application Insights, Prometheus, Grafana
+
+### Platform Services (via Helm)
+- **ArgoCD** - GitOps platform for application deployment
+- **JupyterHub** - Data science platform with GPU support
+- **MLflow** - ML lifecycle management with PostgreSQL and MinIO
+- **Monitoring Stack** - Prometheus, Grafana, Loki for observability
+
+## Prerequisites
+
+- Azure CLI installed and configured
+- Terraform >= 1.0
+- Docker (for containerization examples)
+- kubectl (for Kubernetes management)
+- Bash shell (Linux/macOS native, Windows via WSL2 or Git Bash)
+
+## Cost Monitoring Examples
+
+Monitor your Azure spending with built-in cost monitoring tools:
+
+### Quick Cost Check
+```bash
+# Current month actual costs (uses default: aks-platform)
+./scripts/cost-monitor.sh
+
+# Or with custom project name
+./scripts/cost-monitor.sh --project-name "my-company-platform"
+
+# Cost estimates for planning
+./scripts/cost-monitor.sh --estimate --env dev
+./scripts/cost-monitor.sh --estimate --env prod --region westus2
+```
+
+### Budget Monitoring
+```bash
+# Set up budget alerts with notifications
+./scripts/cost-monitor.sh --budget 1000 \
+  --webhook "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK"
+
+# Daily automated monitoring
+./scripts/cost-monitor.sh --schedule daily --budget 500
+```
+
+### Cost Dashboard
+```bash
+# Generate HTML dashboard
+./scripts/cost-monitor.sh --dashboard
+
+# Serve live dashboard
+./scripts/cost-monitor.sh --dashboard --serve --port 8080
+```
+
+### Estimated Monthly Costs (US East)
+- **Development**: $220-650 (base/with AI/ML)
+- **Staging**: $380-1220 (base/with AI/ML)
+- **Production**: $1000-3600 (base/with AI/ML)
+
+## Quick Start
+
+Choose your deployment scenario:
+
+### New to Azure
+Start with the [**Greenfield Setup Guide**](docs/greenfield-setup-guide.md) for a complete walkthrough including:
+- Azure account setup and permissions
+- Cost estimation and optimization
+- Step-by-step deployment process
+
+### Quick Deployment
+Use the [**Quick Start Guide**](docs/quick-start.md) to get running in 5 minutes:
+
+```bash
+git clone <repository-url>
+cd azure-aks-gitops
+./scripts/setup-azure-credentials.sh
+git push origin main  # Triggers automated deployment
+```
+
+### Existing Azure Environment
+See the [**Existing Infrastructure Guide**](docs/existing-infrastructure-guide.md) for:
+- Integration with existing AKS clusters
+- IP range and naming customization
+- Platform-services-only deployment
+
+## Documentation
+
+### Getting Started
+| Guide | Description | Best For |
+|-------|-------------|----------|
+| [**Greenfield Setup Guide**](docs/greenfield-setup-guide.md) | Complete Azure setup from scratch | New Azure users |
+| [**Pipeline Deployment Guide**](docs/pipeline-deployment-guide.md) | Automated GitHub Actions deployment | Production deployments |
+| [**Quick Start Guide**](docs/quick-start.md) | 5-minute deployment | Experienced users |
+| [**No Domain Setup**](docs/no-domain-setup.md) | Deploy without owning a domain | Testing/development |
+
+### Deployment & Integration
+| Guide | Description |
+|-------|-------------|
+| [**Greenfield Deployment Validation**](docs/greenfield-deployment-validation.md) | Complete validation checklist and methods |
+| [**Certificate Management Guide**](docs/certificate-management-guide.md) | SSL/TLS certificate options and setup |
+| [**Deployment Guide**](docs/deployment-guide.md) | Comprehensive deployment instructions |
+| [**Existing Infrastructure Guide**](docs/existing-infrastructure-guide.md) | Integration with existing Azure environments |
+| [**Let's Encrypt Integration**](docs/letsencrypt-integration.md) | Automatic SSL certificate management |
+
+### Operations & Security
+| Guide | Description |
+|-------|-------------|
+| [**Architecture Guide**](docs/architecture.md) | System architecture and design decisions |
+| [**Platform Design Philosophy**](docs/platform-design-philosophy.md) | Design decisions and trade-offs |
+| [**Security Guide**](docs/security.md) | Security best practices and configurations |
+| [**CI/CD Guide**](docs/cicd-guide.md) | GitHub Actions workflows and automation |
+| [**Helm Management Guide**](docs/helm-management-guide.md) | Helm chart management and GitOps workflows |
+| [**Cost Monitoring Guide**](docs/cost-monitoring-guide.md) | Real-time Azure cost monitoring and budget alerts |
+| [**Troubleshooting**](docs/troubleshooting.md) | Common issues and solutions |
+| [**Production Update Strategy**](docs/production-update-strategy.md) | Safe production deployment procedures |
+| [**Cleanup Guide**](docs/cleanup-guide.md) | Complete infrastructure removal |
+
+## Support
+
+For questions or issues, please create an issue in this repository or contact cmcc.
