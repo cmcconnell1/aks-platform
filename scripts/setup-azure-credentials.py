@@ -57,7 +57,9 @@ from typing import Dict, List, Optional
 
 # Import shared utilities if available
 try:
-    from azure_utils import AzureHelper, ConfigManager, DependencyChecker
+    from azure_utils import (AzureHelper, ConfigManager, DependencyChecker,
+                           VirtualEnvironmentChecker, print_status, print_success,
+                           print_warning, print_error)
     AZURE_UTILS_AVAILABLE = True
 except ImportError:
     AZURE_UTILS_AVAILABLE = False
@@ -367,9 +369,17 @@ def main():
                        help='Environments to create (default: dev staging prod)')
     
     args = parser.parse_args()
-    
+
     print_status(f"Starting Azure credentials setup for {args.project_name}...")
-    
+    print()
+
+    # Check Python environment and virtual environment status
+    if AZURE_UTILS_AVAILABLE:
+        print_status("Checking Python environment...")
+        VirtualEnvironmentChecker.check_python_version()
+        VirtualEnvironmentChecker.check_and_warn_virtual_environment()
+        print()
+
     try:
         check_prerequisites()
         azure_info = get_subscription_info()

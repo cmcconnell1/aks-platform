@@ -119,11 +119,39 @@ This Terraform configuration creates a **complete, production-ready AKS platform
 
 ## Prerequisites
 
+### Core Tools
 - Azure CLI installed and configured
 - Terraform >= 1.0
 - Docker (for containerization examples)
 - kubectl (for Kubernetes management)
 - Bash shell (Linux/macOS native, Windows via WSL2 or Git Bash)
+
+### Python Environment
+- Python 3.7+ with pip
+- Virtual environment (recommended for dependency isolation)
+
+#### Quick Python Setup
+```bash
+# Create and activate virtual environment
+./scripts/setup-python-env.sh
+
+# Or manually
+python3 -m venv venv
+source venv/bin/activate  # Linux/macOS
+# venv\Scripts\activate   # Windows
+
+# Install dependencies
+pip install -r scripts/requirements.txt
+```
+
+#### Check Environment Status
+```bash
+# Check Python environment and virtual environment status
+python3 scripts/check-python-env.py
+
+# Or use the Makefile
+make status
+```
 
 ## Cost Monitoring Examples
 
@@ -180,8 +208,8 @@ Start with the [**Greenfield Setup Guide**](docs/greenfield-setup-guide.md) for 
 Use the [**Quick Start Guide**](docs/quick-start.md) to get running in 5 minutes:
 
 ```bash
-git clone <repository-url>
-cd azure-aks-gitops
+git clone git@github.com:cmcconnell1/aks-platform.git
+cd aks-platform
 ./scripts/setup-azure-credentials.sh
 git push origin main  # Triggers automated deployment
 ```
@@ -191,6 +219,63 @@ See the [**Existing Infrastructure Guide**](docs/existing-infrastructure-guide.m
 - Integration with existing AKS clusters
 - IP range and naming customization
 - Platform-services-only deployment
+
+## Development Workflow
+
+This project follows Python best practices with virtual environment isolation and comprehensive tooling.
+
+### Environment Setup
+```bash
+# Set up development environment with all tools
+make setup-dev
+
+# Or manually
+./scripts/setup-python-env.sh --dev
+source venv/bin/activate
+```
+
+### Common Development Tasks
+```bash
+# Check environment status
+make status
+
+# Run code quality checks
+make check
+
+# Format code
+make format
+
+# Run tests
+make test
+
+# Security audit
+make security-audit
+
+# Clean up
+make clean
+```
+
+### Dependency Management
+```bash
+# Check dependencies
+python3 scripts/manage-dependencies.py check
+
+# Update dependencies
+python3 scripts/manage-dependencies.py update
+
+# Security audit
+python3 scripts/manage-dependencies.py audit
+
+# Generate frozen requirements
+python3 scripts/manage-dependencies.py freeze
+```
+
+### Virtual Environment Best Practices
+- Always use virtual environments for Python development
+- Activate virtual environment before running scripts
+- Use pinned versions in requirements.txt for reproducibility
+- Separate requirements files for different purposes (dev, test, prod)
+- Regular security audits of dependencies
 
 ## Documentation
 

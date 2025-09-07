@@ -21,6 +21,19 @@ from pathlib import Path
 import re
 import ast
 
+# Import shared utilities if available
+try:
+    from azure_utils import (VirtualEnvironmentChecker, print_status,
+                           print_success, print_warning, print_error)
+    AZURE_UTILS_AVAILABLE = True
+except ImportError:
+    AZURE_UTILS_AVAILABLE = False
+    # Fallback color functions
+    def print_status(msg): print(f"[INFO] {msg}")
+    def print_success(msg): print(f"[SUCCESS] {msg}")
+    def print_warning(msg): print(f"[WARNING] {msg}")
+    def print_error(msg): print(f"[ERROR] {msg}")
+
 
 def analyze_imports_manually(script_path):
     """
@@ -288,6 +301,17 @@ def generate_requirements(modules, badmodules):
 
 def main():
     """Main function to run the module dependency analysis."""
+    print("Module Dependency Checker for Azure AKS GitOps Platform")
+    print("=" * 60)
+    print()
+
+    # Check Python environment
+    if AZURE_UTILS_AVAILABLE:
+        print_status("Checking Python environment...")
+        VirtualEnvironmentChecker.check_python_version()
+        VirtualEnvironmentChecker.check_and_warn_virtual_environment()
+        print()
+
     # Default script to analyze
     default_script = './scripts/setup-azure-credentials.py'
 

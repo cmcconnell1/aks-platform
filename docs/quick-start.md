@@ -36,19 +36,32 @@ curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
 ### 1. Clone and Prepare
 
 ```bash
-git clone <your-repo-url>
+git clone git@github.com:cmcconnell1/aks-platform.git
 cd aks-platform
 chmod +x scripts/*.sh
 ```
 
-### 2. Azure Authentication
+### 2. Python Environment Setup
+
+```bash
+# Set up virtual environment with dependencies
+./scripts/setup-python-env.sh
+
+# Activate virtual environment
+source venv/bin/activate
+
+# Verify setup
+python3 scripts/check-python-env.py
+```
+
+### 3. Azure Authentication
 
 ```bash
 az login
 az account set --subscription "your-subscription-id"
 ```
 
-### 3. Automated Azure Setup
+### 4. Automated Azure Setup
 
 Choose your preferred script:
 
@@ -66,7 +79,7 @@ This creates:
 - Backend configuration files
 - Environment-specific variable files
 
-### 4. GitHub Setup
+### 5. GitHub Setup
 
 ```bash
 gh auth login

@@ -16,8 +16,38 @@ This directory contains automation scripts for setting up and managing the Azure
 | [`cleanup-infrastructure.sh`](#cleanup-infrastructuresh) | Complete infrastructure removal | Shell Script | Azure CLI, Terraform |
 | [`module-check.py`](#module-checkpy) | Python module dependency analysis | Python Utility | None |
 | [`azure_utils.py`](#azure_utilspy) | Shared utilities for Python scripts | Python Module | Azure CLI (optional) |
+| [`setup-python-env.sh`](#setup-python-envsh) | **Python virtual environment setup** | Shell Script | Python 3.7+ |
+| [`check-python-env.py`](#check-python-envpy) | Python environment checker | Python Utility | None |
+| [`manage-dependencies.py`](#manage-dependenciespy) | Dependency management and security audit | Python Utility | Virtual environment |
+| [`venv-utils.sh`](#venv-utilssh) | Virtual environment utilities for shell scripts | Shell Library | None |
 
 ## Quick Start
+
+### 0. Python Environment Setup (Recommended)
+
+Set up a virtual environment for better dependency management:
+
+```bash
+# Automated setup with all dependencies
+./scripts/setup-python-env.sh
+
+# Or with development tools
+./scripts/setup-python-env.sh --dev
+
+# Check environment status
+python3 scripts/check-python-env.py
+
+# Manual setup (alternative)
+python3 -m venv venv
+source venv/bin/activate
+pip install -r scripts/requirements.txt
+```
+
+**Why use virtual environments?**
+- Isolate project dependencies from system Python
+- Ensure reproducible environments across different machines
+- Prevent conflicts between different projects
+- Follow Python development best practices
 
 ### 1. Initial Azure Setup
 ```bash
@@ -580,6 +610,147 @@ pip install requests
 - **Script**: Standalone shell script
 - **Utility**: Helper tool or module
 - **Optional***: Required only for specific modes (e.g., `--actual` mode for cost monitoring)
+
+### `setup-python-env.sh`
+
+**Purpose**: Automated Python virtual environment setup with dependency management.
+
+**Key Features**:
+- **Virtual environment creation**: Creates isolated Python environments
+- **Dependency installation**: Installs production and development dependencies
+- **Cross-platform support**: Works on Linux, macOS, and Windows (Git Bash/WSL)
+- **Helper script generation**: Creates activation shortcuts
+- **Comprehensive validation**: Checks Python version and virtual environment support
+
+**Usage**:
+```bash
+# Basic setup
+./scripts/setup-python-env.sh
+
+# With development dependencies
+./scripts/setup-python-env.sh --dev
+
+# Custom virtual environment name
+./scripts/setup-python-env.sh --venv-name .venv
+
+# Force recreation
+./scripts/setup-python-env.sh --force
+
+# Get help
+./scripts/setup-python-env.sh --help
+```
+
+**Generated Files**:
+- `venv/` or `.venv/` - Virtual environment directory
+- `activate-python-env.sh` - Helper activation script
+
+### `check-python-env.py`
+
+**Purpose**: Comprehensive Python environment checker and diagnostic tool.
+
+**Key Features**:
+- **Environment detection**: Checks if running in virtual environment
+- **Version validation**: Ensures Python 3.7+ compatibility
+- **Dependency analysis**: Lists installed and missing packages
+- **Recommendations**: Provides setup guidance and next steps
+- **Status reporting**: Clear summary of environment health
+
+**Usage**:
+```bash
+# Check current environment
+python3 scripts/check-python-env.py
+
+# Make executable and run
+chmod +x scripts/check-python-env.py
+./scripts/check-python-env.py
+```
+
+### `manage-dependencies.py`
+
+**Purpose**: Advanced dependency management with security auditing.
+
+**Key Features**:
+- **Dependency checking**: Validates installed packages against requirements
+- **Security auditing**: Scans for known vulnerabilities using pip-audit/safety
+- **Update management**: Updates packages to latest compatible versions
+- **Requirements generation**: Creates frozen requirements files
+- **Outdated package detection**: Identifies packages needing updates
+
+**Usage**:
+```bash
+# Check dependencies
+python3 scripts/manage-dependencies.py check
+
+# Security audit
+python3 scripts/manage-dependencies.py audit
+
+# Update packages (dry run)
+python3 scripts/manage-dependencies.py update --dry-run
+
+# Generate frozen requirements
+python3 scripts/manage-dependencies.py freeze
+
+# Show outdated packages
+python3 scripts/manage-dependencies.py outdated
+```
+
+### `venv-utils.sh`
+
+**Purpose**: Shared virtual environment utilities for shell scripts.
+
+**Key Features**:
+- **Environment detection**: Functions to check virtual environment status
+- **Package installation**: Virtual environment-aware package management
+- **Activation helpers**: Utilities for finding and activating environments
+- **Status reporting**: Functions for environment status display
+- **Integration support**: Easy integration into existing shell scripts
+
+**Usage** (in shell scripts):
+```bash
+# Source the utilities
+source scripts/venv-utils.sh
+
+# Check virtual environment
+check_virtual_environment
+
+# Install packages with virtual environment awareness
+install_python_packages_with_venv "package1" "package2"
+
+# Show environment status
+show_venv_status
+```
+
+## Python Development Best Practices
+
+### Virtual Environment Workflow
+1. **Always use virtual environments** for Python development
+2. **Create project-specific environments** - never share between projects
+3. **Activate before installing packages** - `source venv/bin/activate`
+4. **Pin dependency versions** in requirements.txt for reproducibility
+5. **Regular security audits** of dependencies
+
+### Dependency Management
+1. **Use requirements files** for different purposes:
+   - `requirements.txt` - Production dependencies
+   - `requirements-dev.txt` - Development tools
+   - `requirements-test.txt` - Testing frameworks
+2. **Pin exact versions** for production deployments
+3. **Regular updates** with thorough testing
+4. **Security scanning** with pip-audit or safety
+
+### Development Tools Integration
+```bash
+# Use Makefile for common tasks
+make setup-dev    # Set up development environment
+make check        # Run all quality checks
+make test         # Run test suite
+make format       # Format code
+make clean        # Clean up environment
+
+# Or use individual tools
+python3 scripts/manage-dependencies.py audit
+python3 scripts/check-python-env.py
+```
 
 ## Security Considerations
 

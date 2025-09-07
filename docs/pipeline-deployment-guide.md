@@ -55,7 +55,7 @@ Run the automated setup scripts to configure Azure resources and credentials:
 
 ```bash
 # Clone the repository
-git clone https://github.com/cmcconnell1/aks-platform.git
+git clone git@github.com:cmcconnell1/aks-platform.git
 cd aks-platform
 
 # Make scripts executable

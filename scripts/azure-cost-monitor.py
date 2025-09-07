@@ -37,14 +37,32 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple
 import subprocess
 
+# Import shared utilities if available
+try:
+    from azure_utils import (VirtualEnvironmentChecker, DependencyChecker,
+                           print_status, print_success, print_warning, print_error)
+    AZURE_UTILS_AVAILABLE = True
+except ImportError:
+    AZURE_UTILS_AVAILABLE = False
+    # Fallback color functions
+    def print_status(msg): print(f"[INFO] {msg}")
+    def print_success(msg): print(f"[SUCCESS] {msg}")
+    def print_warning(msg): print(f"[WARNING] {msg}")
+    def print_error(msg): print(f"[ERROR] {msg}")
+
 try:
     from azure.identity import DefaultAzureCredential
     from azure.mgmt.costmanagement import CostManagementClient
     from azure.mgmt.resource import ResourceManagementClient
     import requests
 except ImportError as e:
-    print(f"Error: Required Azure packages not installed: {e}")
-    print("Install with: pip install azure-mgmt-costmanagement azure-identity azure-mgmt-resource requests")
+    print_error(f"Required Azure packages not installed: {e}")
+    print_status("Install with: pip install azure-mgmt-costmanagement azure-identity azure-mgmt-resource requests")
+    if AZURE_UTILS_AVAILABLE:
+        print_status("Or use the setup script: ./scripts/setup-python-env.sh")
+        is_venv, _ = VirtualEnvironmentChecker.is_virtual_environment()
+        if not is_venv:
+            print_warning("Consider using a virtual environment for better dependency management")
     sys.exit(1)
 
 
@@ -298,7 +316,13 @@ def main():
                        help='Minimal output for scripting')
     
     args = parser.parse_args()
-    
+
+    # Check Python environment if not in quiet mode
+    if not args.quiet and AZURE_UTILS_AVAILABLE:
+        print_status("Checking Python environment...")
+        VirtualEnvironmentChecker.check_and_warn_virtual_environment()
+        print()
+
     # Get subscription ID
     try:
         result = subprocess.run(['az', 'account', 'show', '--query', 'id', '-o', 'tsv'],

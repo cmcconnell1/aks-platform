@@ -11,7 +11,24 @@ This guide walks you through deploying the complete Azure AKS platform with Appl
 - [Helm](https://helm.sh/docs/intro/install/) >= 3.10
 - [GitHub CLI](https://cli.github.com/) >= 2.0 (for automated setup)
 - [jq](https://stedolan.github.io/jq/) (for JSON processing)
+- **Python 3.7+** with pip (for automation scripts)
 - **Bash shell** (Linux/macOS native, Windows via WSL2 or Git Bash)
+
+### Python Environment Setup
+Set up a virtual environment for better dependency management:
+
+```bash
+# Automated setup (recommended)
+./scripts/setup-python-env.sh
+
+# Check environment status
+python3 scripts/check-python-env.py
+
+# Manual setup (alternative)
+python3 -m venv venv
+source venv/bin/activate
+pip install -r scripts/requirements.txt
+```
 
 ### Azure Permissions
 Your Azure account needs the following permissions:

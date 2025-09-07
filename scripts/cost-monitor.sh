@@ -27,6 +27,10 @@
 
 set -e
 
+# Source virtual environment utilities
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/venv-utils.sh"
+
 # ANSI color codes for output formatting
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -178,40 +182,50 @@ parse_arguments() {
     done
 }
 
-# Check and install dependencies
+# Check and install dependencies with virtual environment support
 check_dependencies() {
+    # Check virtual environment status
+    check_virtual_environment
+
     if [[ "$INSTALL_DEPS" == "true" ]]; then
         print_status "Installing Python dependencies..."
-        pip3 install azure-mgmt-costmanagement azure-identity azure-mgmt-resource requests
+        local packages=("azure-mgmt-costmanagement" "azure-identity" "azure-mgmt-resource" "requests")
+        install_python_packages_with_venv "${packages[@]}"
         return 0
     fi
-    
+
     # Check if Python script exists
     if [[ ! -f "scripts/azure-cost-monitor.py" ]]; then
         print_error "azure-cost-monitor.py not found in scripts directory"
         exit 1
     fi
-    
+
     # Check if Azure CLI is available
     if ! command -v az >/dev/null 2>&1; then
         print_error "Azure CLI is not installed"
         print_status "Install with: curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash"
         exit 1
     fi
-    
+
     # Check if logged in to Azure
     if ! az account show >/dev/null 2>&1; then
         print_error "Not logged in to Azure. Please run 'az login' first"
         exit 1
     fi
-    
+
     # Check Python dependencies
-    python3 -c "import azure.mgmt.costmanagement, azure.identity, azure.mgmt.resource, requests" 2>/dev/null || {
-        print_warning "Python dependencies not found"
-        print_status "Install with: pip3 install azure-mgmt-costmanagement azure-identity azure-mgmt-resource requests"
+    local missing_packages
+    missing_packages=$(check_python_packages "azure.mgmt.costmanagement" "azure.identity" "azure.mgmt.resource" "requests")
+
+    if [[ -n "$missing_packages" ]]; then
+        print_warning "Python dependencies not found: $missing_packages"
+        print_status "Install with virtual environment:"
+        print_status "  ./scripts/setup-python-env.sh"
+        print_status "  source venv/bin/activate"
+        print_status "  pip install azure-mgmt-costmanagement azure-identity azure-mgmt-resource requests"
         print_status "Or run with --install-deps to install automatically"
         exit 1
-    }
+    fi
 }
 
 # Set up scheduled monitoring

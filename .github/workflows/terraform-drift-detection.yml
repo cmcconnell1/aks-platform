@@ -45,6 +45,20 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Setup Python Virtual Environment
+        run: |
+          python -m venv venv
+          echo "VIRTUAL_ENV=$PWD/venv" >> $GITHUB_ENV
+          echo "$PWD/venv/bin" >> $GITHUB_PATH
+          source venv/bin/activate
+          python -m pip install --upgrade pip
+          pip install -r scripts/requirements.txt
+
       - name: Terraform Init
         run: |
           terraform init \

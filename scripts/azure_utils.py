@@ -25,6 +25,7 @@ import json
 import os
 import subprocess
 import sys
+from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 from datetime import datetime
 
@@ -56,6 +57,143 @@ def print_warning(message: str) -> None:
 def print_error(message: str) -> None:
     """Print error message with red color."""
     print(f"{Colors.RED}[ERROR]{Colors.NC} {message}")
+
+
+class VirtualEnvironmentChecker:
+    """Utility class for checking and managing Python virtual environments."""
+
+    @staticmethod
+    def is_virtual_environment() -> Tuple[bool, Optional[str]]:
+        """
+        Check if running in a virtual environment.
+
+        Returns:
+            Tuple of (is_venv, venv_path)
+        """
+        # Check for virtual environment indicators
+        if hasattr(sys, 'real_prefix'):
+            # virtualenv
+            return True, getattr(sys, 'real_prefix', None)
+
+        if hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix:
+            # venv
+            return True, sys.prefix
+
+        # Check environment variables
+        if os.environ.get('VIRTUAL_ENV'):
+            return True, os.environ.get('VIRTUAL_ENV')
+
+        return False, None
+
+    @staticmethod
+    def find_virtual_environments(project_root: Optional[str] = None) -> List[str]:
+        """
+        Find potential virtual environment directories in the project.
+
+        Args:
+            project_root: Root directory to search (defaults to current script's parent)
+
+        Returns:
+            List of virtual environment directory paths
+        """
+        if project_root is None:
+            # Default to the parent directory of the scripts folder
+            script_dir = Path(__file__).parent
+            project_root = script_dir.parent
+        else:
+            project_root = Path(project_root)
+
+        venv_dirs = []
+
+        # Common virtual environment directory names
+        common_names = ['venv', '.venv', 'env', '.env', 'virtualenv']
+
+        for name in common_names:
+            venv_path = project_root / name
+            if venv_path.exists() and venv_path.is_dir():
+                # Check if it looks like a virtual environment
+                activate_script = venv_path / 'bin' / 'activate'
+                activate_script_win = venv_path / 'Scripts' / 'activate'
+
+                if activate_script.exists() or activate_script_win.exists():
+                    venv_dirs.append(str(venv_path))
+
+        return venv_dirs
+
+    @staticmethod
+    def check_and_warn_virtual_environment() -> bool:
+        """
+        Check virtual environment status and provide warnings/recommendations.
+
+        Returns:
+            True if running in virtual environment, False otherwise
+        """
+        is_venv, venv_path = VirtualEnvironmentChecker.is_virtual_environment()
+
+        if is_venv:
+            print_success(f"Running in virtual environment: {venv_path}")
+            return True
+        else:
+            print_warning("Not running in a virtual environment")
+            print_status("Virtual environments are recommended for Python development")
+
+            # Look for existing virtual environments
+            found_venvs = VirtualEnvironmentChecker.find_virtual_environments()
+            if found_venvs:
+                print_status("Found existing virtual environments:")
+                for venv_dir in found_venvs:
+                    print(f"  - {venv_dir}")
+                print_status("To activate, run:")
+                print(f"  source {found_venvs[0]}/bin/activate")
+                print("  # OR use the helper script:")
+                print("  source ./activate-python-env.sh")
+            else:
+                print_status("No virtual environments found")
+                print_status("Create one with:")
+                print("  ./scripts/setup-python-env.sh")
+                print("  # OR manually:")
+                print("  python3 -m venv venv && source venv/bin/activate")
+
+            print()
+            return False
+
+    @staticmethod
+    def get_python_version_info() -> Dict[str, str]:
+        """
+        Get Python version information.
+
+        Returns:
+            Dictionary with version information
+        """
+        version_info = sys.version_info
+        return {
+            'version': f"{version_info.major}.{version_info.minor}.{version_info.micro}",
+            'major': str(version_info.major),
+            'minor': str(version_info.minor),
+            'micro': str(version_info.micro),
+            'is_compatible': version_info >= (3, 7),
+            'executable': sys.executable,
+            'prefix': sys.prefix,
+            'base_prefix': getattr(sys, 'base_prefix', sys.prefix)
+        }
+
+    @staticmethod
+    def check_python_version() -> bool:
+        """
+        Check if Python version meets requirements.
+
+        Returns:
+            True if compatible, False otherwise
+        """
+        version_info = VirtualEnvironmentChecker.get_python_version_info()
+
+        if version_info['is_compatible']:
+            print_success(f"Python version: {version_info['version']} (compatible)")
+            return True
+        else:
+            print_error(f"Python version: {version_info['version']} (requires 3.7+)")
+            print_status("Please upgrade Python to version 3.7 or higher")
+            return False
 
 
 class AzureHelper:
@@ -233,12 +371,93 @@ class DependencyChecker:
     @staticmethod
     def install_python_package(package: str) -> bool:
         """Install a Python package using pip."""
+        # Check if in virtual environment first
+        is_venv, _ = VirtualEnvironmentChecker.is_virtual_environment()
+
+        if not is_venv:
+            print_warning(f"Installing {package} outside virtual environment")
+            print_status("Consider using a virtual environment for better dependency management")
+
         try:
             subprocess.run([sys.executable, '-m', 'pip', 'install', package],
                          capture_output=True, text=True, check=True)
             return True
         except subprocess.CalledProcessError as e:
             print_error(f"Failed to install {package}: {e}")
+            return False
+
+    @staticmethod
+    def check_requirements_file(requirements_path: Optional[str] = None) -> Tuple[bool, List[str]]:
+        """
+        Check if requirements file exists and list missing packages.
+
+        Args:
+            requirements_path: Path to requirements file (defaults to scripts/requirements.txt)
+
+        Returns:
+            Tuple of (file_exists, missing_packages)
+        """
+        if requirements_path is None:
+            script_dir = Path(__file__).parent
+            requirements_path = script_dir / 'requirements.txt'
+        else:
+            requirements_path = Path(requirements_path)
+
+        if not requirements_path.exists():
+            return False, []
+
+        missing_packages = []
+
+        try:
+            with open(requirements_path, 'r') as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith('#'):
+                        # Extract package name (before == or >= etc.)
+                        package_name = line.split('==')[0].split('>=')[0].split('<=')[0].split('~=')[0].strip()
+                        if package_name and not DependencyChecker.check_python_package(package_name):
+                            missing_packages.append(package_name)
+        except IOError:
+            return False, []
+
+        return True, missing_packages
+
+    @staticmethod
+    def install_requirements(requirements_path: Optional[str] = None, use_venv: bool = True) -> bool:
+        """
+        Install packages from requirements file.
+
+        Args:
+            requirements_path: Path to requirements file
+            use_venv: Whether to check for virtual environment
+
+        Returns:
+            True if successful, False otherwise
+        """
+        if requirements_path is None:
+            script_dir = Path(__file__).parent
+            requirements_path = script_dir / 'requirements.txt'
+        else:
+            requirements_path = Path(requirements_path)
+
+        if not requirements_path.exists():
+            print_error(f"Requirements file not found: {requirements_path}")
+            return False
+
+        if use_venv:
+            is_venv, _ = VirtualEnvironmentChecker.is_virtual_environment()
+            if not is_venv:
+                print_warning("Installing packages outside virtual environment")
+                print_status("Consider activating a virtual environment first")
+
+        try:
+            print_status(f"Installing packages from {requirements_path}")
+            subprocess.run([sys.executable, '-m', 'pip', 'install', '-r', str(requirements_path)],
+                         capture_output=True, text=True, check=True)
+            print_success("Packages installed successfully")
+            return True
+        except subprocess.CalledProcessError as e:
+            print_error(f"Failed to install packages: {e}")
             return False
     
     def check_azure_dependencies(self) -> bool:

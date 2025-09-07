@@ -40,7 +40,7 @@ Complete deployment using GitHub Actions with minimal manual intervention.
 #### Step 1: Initial Azure Setup
 ```bash
 # Clone repository
-git clone <your-repo-url>
+git clone git@github.com:cmcconnell1/aks-platform.git
 cd aks-platform
 
 # Make scripts executable

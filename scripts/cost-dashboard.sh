@@ -18,6 +18,10 @@
 
 set -e
 
+# Source virtual environment utilities
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/venv-utils.sh"
+
 # Default configuration
 PROJECT_NAME="aks-gitops"
 OUTPUT_FILE="cost-dashboard.html"

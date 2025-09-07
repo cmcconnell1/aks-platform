@@ -1,0 +1,33 @@
+# Test Dependencies for Azure AKS GitOps Platform Scripts
+#
+# Install with: pip install -r scripts/requirements-test.txt
+# Or use: ./scripts/setup-python-env.sh --dev (includes these)
+
+# Testing Framework
+pytest>=7.4.3                    # Testing framework
+pytest-cov>=4.1.0                # Coverage reporting
+pytest-mock>=3.12.0              # Mocking utilities
+pytest-asyncio>=0.21.1           # Async testing support
+pytest-xdist>=3.3.1              # Parallel test execution
+pytest-html>=4.1.1               # HTML test reports
+pytest-json-report>=1.5.0        # JSON test reports
+
+# Test Utilities
+factory-boy>=3.3.0               # Test data generation
+faker>=19.12.0                   # Fake data generation
+freezegun>=1.2.2                 # Time mocking
+responses>=0.23.3                # HTTP request mocking
+httpx>=0.25.2                    # Modern HTTP client for testing
+requests-mock>=1.11.0            # Requests library mocking
+
+# Azure Testing Tools
+azure-devtools>=1.2.0            # Azure development tools
+azure-core>=1.29.5               # Azure core for testing
+
+# Performance Testing
+locust>=2.17.0                   # Load testing framework
+memory-profiler>=0.61.0          # Memory usage profiling
+
+# Test Data and Fixtures
+pyyaml>=6.0.1                    # YAML parsing for test data
+jsonschema>=4.19.2               # JSON schema validation

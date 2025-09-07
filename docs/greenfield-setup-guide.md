@@ -83,7 +83,7 @@ az ad sp delete --id $(az ad sp list --display-name permission-test-sp --query "
 
 ```bash
 # Clone the repository
-git clone https://github.com/cmcconnell1/aks-platform.git
+git clone git@github.com:cmcconnell1/aks-platform.git
 cd aks-platform
 
 # Make scripts executable
@@ -106,7 +106,28 @@ az account set --subscription "your-subscription-id"
 az account show
 ```
 
-### Step 3: Run Automated Azure Setup
+### Step 3: Set Up Python Environment
+
+Set up a virtual environment for the automation scripts:
+
+```bash
+# Automated setup (recommended)
+./scripts/setup-python-env.sh
+
+# Activate the virtual environment
+source venv/bin/activate
+
+# Verify the setup
+python3 scripts/check-python-env.py
+```
+
+**Why use virtual environments?**
+- Isolates project dependencies from system Python
+- Ensures consistent package versions across environments
+- Prevents conflicts with other Python projects
+- Follows Python development best practices
+
+### Step 4: Run Automated Azure Setup
 
 Choose your preferred setup method:
 
@@ -125,7 +146,7 @@ Choose your preferred setup method:
 - Backend configuration files
 - Environment-specific variable files
 
-### Step 4: Configure GitHub Integration
+### Step 5: Configure GitHub Integration
 
 ```bash
 # Login to GitHub CLI
