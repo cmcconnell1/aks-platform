@@ -196,15 +196,15 @@ check_backend_config() {
 # Check if terraform.tfvars exists
 check_terraform_vars() {
     print_header "Checking Terraform Variables"
-    
+
     local tfvars_file="terraform/environments/${ENVIRONMENT}/terraform.tfvars"
-    
+
     if [[ -f "$tfvars_file" ]]; then
         print_success "Terraform variables file exists: $tfvars_file"
-        
+
         # Check for key variables
         local key_vars=("project_name" "location" "environment")
-        
+
         for var in "${key_vars[@]}"; do
             if grep -q "^${var}" "$tfvars_file"; then
                 local value=$(grep "^${var}" "$tfvars_file" | cut -d'=' -f2 | tr -d ' "')
@@ -213,10 +213,19 @@ check_terraform_vars() {
                 print_warning "  ? $var is not explicitly set (may use default)"
             fi
         done
+
+        # Check if file is committed to git
+        if git ls-files --error-unmatch "$tfvars_file" >/dev/null 2>&1; then
+            print_warning "  ⚠ terraform.tfvars is committed to git (security risk)"
+            print_status "    Consider using environment variables in CI/CD instead"
+        else
+            print_success "  ✓ terraform.tfvars is not committed (good security practice)"
+            print_status "    GitHub Actions uses TF_VAR_ environment variables instead"
+        fi
     else
-        print_error "Terraform variables file not found: $tfvars_file"
-        print_status "Run: ./scripts/setup-azure-credentials.sh --project-name $PROJECT_NAME"
-        return 1
+        print_warning "Terraform variables file not found: $tfvars_file"
+        print_status "This is normal for CI/CD environments that use TF_VAR_ environment variables"
+        print_status "For local development, run: ./scripts/setup-azure-credentials.sh --project-name $PROJECT_NAME"
     fi
 }
 

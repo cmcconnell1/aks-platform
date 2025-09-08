@@ -193,6 +193,19 @@ gh run list --limit 5
 **Symptoms:** `Error: Failed to query available provider packages for hashicorp/kubectl`
 **Solution:** Ensure `terraform.tf` uses `gavinbunney/kubectl` not `hashicorp/kubectl`
 
+### Issue: "terraform.tfvars does not exist" in GitHub Actions
+**Symptoms:**
+```
+Error: Failed to read variables file
+Given variables file environments/dev/terraform.tfvars does not exist.
+```
+**Solution:** This was fixed in commit `f09f9db`. The GitHub Actions workflow now uses TF_VAR_ environment variables instead of committed tfvars files for security.
+
+**Why this happens**:
+- `*.tfvars` files are intentionally excluded from git (see `.gitignore`)
+- Local development uses `terraform.tfvars` files (not committed)
+- CI/CD uses `TF_VAR_` environment variables (secure)
+
 ### Issue: Multiple Workflow Runs
 **Symptoms:** Two GitHub Actions runs on same commit
 **Solution:** Workflow now includes concurrency control to prevent this
