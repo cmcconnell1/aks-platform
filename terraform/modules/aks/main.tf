@@ -23,11 +23,9 @@ resource "azurerm_kubernetes_cluster" "main" {
     os_disk_size_gb    = 100
     os_disk_type       = "Managed"
     type               = "VirtualMachineScaleSets"
-    
-    # Use spot instances if enabled
-    priority        = var.enable_spot_instances ? "Spot" : "Regular"
-    eviction_policy = var.enable_spot_instances ? "Delete" : null
-    spot_max_price  = var.enable_spot_instances ? -1 : null
+
+    # Note: Default node pool must use Regular priority for system workloads
+    # Spot instances are configured in additional node pools only
 
     # Node labels for system workloads
     node_labels = {
