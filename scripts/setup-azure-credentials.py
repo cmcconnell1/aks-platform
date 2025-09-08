@@ -160,23 +160,112 @@ def run_command(command: List[str], check: bool = True) -> subprocess.CompletedP
         return e
 
 def check_prerequisites() -> None:
-    """Check if required tools are installed."""
+    """Check if required tools are installed and Azure is properly configured."""
     print_status("Checking prerequisites...")
-    
+
     required_tools = ['az', 'jq']
     for tool in required_tools:
         result = run_command(['which', tool], check=False)
         if result.returncode != 0:
             print_error(f"{tool} is not installed. Please install it first.")
             sys.exit(1)
-    
+
     # Check if logged in to Azure
     result = run_command(['az', 'account', 'show'], check=False)
     if result.returncode != 0:
         print_error("Not logged in to Azure. Please run 'az login' first.")
         sys.exit(1)
-    
+
+    # Check and register required Azure resource providers
+    check_and_register_providers()
+
     print_success("Prerequisites check passed")
+
+def check_and_register_providers() -> None:
+    """Check and register required Azure resource providers."""
+    print_status("Checking Azure resource providers...")
+
+    required_providers = [
+        "Microsoft.ContainerService",
+        "Microsoft.ContainerRegistry",
+        "Microsoft.ContainerInstance",
+        "Microsoft.Network",
+        "Microsoft.Compute",
+        "Microsoft.Storage",
+        "Microsoft.KeyVault",
+        "Microsoft.Authorization",
+        "Microsoft.Resources",
+        "Microsoft.ManagedIdentity"
+    ]
+
+    unregistered_providers = []
+
+    for provider in required_providers:
+        result = run_command([
+            'az', 'provider', 'show',
+            '--namespace', provider,
+            '--query', 'registrationState',
+            '--output', 'tsv'
+        ], check=False)
+
+        if result.returncode == 0:
+            state = result.stdout.strip()
+            if state != 'Registered':
+                unregistered_providers.append(provider)
+                print_status(f"Provider {provider}: {state}")
+            else:
+                print_status(f"Provider {provider}: Registered")
+        else:
+            print_warning(f"Could not check provider {provider}")
+            unregistered_providers.append(provider)
+
+    # Register unregistered providers
+    if unregistered_providers:
+        print_status(f"Registering {len(unregistered_providers)} resource providers...")
+
+        for provider in unregistered_providers:
+            print_status(f"Registering {provider}...")
+            result = run_command([
+                'az', 'provider', 'register',
+                '--namespace', provider
+            ], check=False)
+
+            if result.returncode == 0:
+                print_success(f"Registration initiated for {provider}")
+            else:
+                print_error(f"Failed to register {provider}")
+                sys.exit(1)
+
+        # Wait for registration to complete
+        print_status("Waiting for provider registration to complete...")
+        max_wait_time = 300  # 5 minutes
+        start_time = time.time()
+
+        while time.time() - start_time < max_wait_time:
+            all_registered = True
+            for provider in unregistered_providers:
+                result = run_command([
+                    'az', 'provider', 'show',
+                    '--namespace', provider,
+                    '--query', 'registrationState',
+                    '--output', 'tsv'
+                ], check=False)
+
+                if result.returncode != 0 or result.stdout.strip() != 'Registered':
+                    all_registered = False
+                    break
+
+            if all_registered:
+                print_success("All resource providers registered successfully")
+                break
+
+            print_status("Still waiting for provider registration...")
+            time.sleep(10)
+        else:
+            print_warning("Provider registration is taking longer than expected")
+            print_status("Continuing with setup - providers will complete registration in background")
+    else:
+        print_success("All required resource providers are already registered")
 
 def get_subscription_info() -> Dict[str, str]:
     """Get current Azure subscription information."""

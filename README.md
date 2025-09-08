@@ -308,6 +308,11 @@ python3 scripts/manage-dependencies.py freeze
 | [**CI/CD Guide**](docs/cicd-guide.md) | GitHub Actions workflows and automation |
 | [**Helm Management Guide**](docs/helm-management-guide.md) | Helm chart management and GitOps workflows |
 | [**Cost Monitoring Guide**](docs/cost-monitoring-guide.md) | Real-time Azure cost monitoring and budget alerts |
+
+### Infrastructure Management
+| Script | Description | Usage |
+|--------|-------------|-------|
+| `./scripts/show-infrastructure.sh` | **Infrastructure overview** - Shows all deployed resources by environment | `./scripts/show-infrastructure.sh --all --costs` |
 | [**Troubleshooting**](docs/troubleshooting.md) | Common issues and solutions |
 | [**Production Update Strategy**](docs/production-update-strategy.md) | Safe production deployment procedures |
 | [**Cleanup Guide**](docs/cleanup-guide.md) | Complete infrastructure removal |

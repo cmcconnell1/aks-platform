@@ -65,6 +65,10 @@ parse_arguments() {
                 PROJECT_NAME="$2"
                 shift 2
                 ;;
+            --environment)
+                ENVIRONMENTS=("$2")
+                shift 2
+                ;;
             --force)
                 FORCE_CLEANUP=true
                 shift
@@ -93,15 +97,17 @@ show_help() {
     echo "Usage: $0 [OPTIONS]"
     echo
     echo "Options:"
-    echo "  --project-name NAME    Project name (default: aks-platform)"
-    echo "  --force               Force cleanup even if errors occur"
-    echo "  --yes                 Skip confirmation prompts"
-    echo "  --help                Show this help message"
+    echo "  --project-name NAME      Project name (default: aks-platform)"
+    echo "  --environment ENV        Clean up specific environment only (dev, staging, prod)"
+    echo "  --force                  Force cleanup even if errors occur"
+    echo "  --yes                    Skip confirmation prompts"
+    echo "  --help                   Show this help message"
     echo
     echo "Examples:"
-    echo "  $0                                    # Interactive cleanup"
-    echo "  $0 --project-name my-project --yes   # Automated cleanup"
-    echo "  $0 --force                           # Force cleanup with error handling"
+    echo "  $0                                      # Interactive cleanup (all environments)"
+    echo "  $0 --environment dev --yes              # Clean up dev environment only"
+    echo "  $0 --project-name my-project --yes     # Automated cleanup"
+    echo "  $0 --force                             # Force cleanup with error handling"
 }
 
 # Confirm cleanup operation with user
@@ -111,15 +117,15 @@ confirm_cleanup() {
     fi
 
     echo
-    print_warning "⚠️  INFRASTRUCTURE CLEANUP WARNING ⚠️"
+    print_warning "INFRASTRUCTURE CLEANUP WARNING"
     echo
     echo "This script will PERMANENTLY DELETE the following:"
-    echo "  • All AKS clusters and workloads"
-    echo "  • Application Gateway and networking"
-    echo "  • Key Vault and all certificates/secrets"
-    echo "  • Storage accounts and Terraform state"
-    echo "  • Service principals and Azure AD applications"
-    echo "  • All data in persistent volumes"
+    echo "  - All AKS clusters and workloads"
+    echo "  - Application Gateway and networking"
+    echo "  - Key Vault and all certificates/secrets"
+    echo "  - Storage accounts and Terraform state"
+    echo "  - Service principals and Azure AD applications"
+    echo "  - All data in persistent volumes"
     echo
     echo "Project: $PROJECT_NAME"
     echo "Environments: ${ENVIRONMENTS[*]}"
@@ -360,20 +366,20 @@ verify_cleanup() {
 # Display cleanup summary
 display_summary() {
     echo
-    print_success "🎉 Infrastructure cleanup completed!"
+    print_success "Infrastructure cleanup completed!"
     echo
     print_status "What was cleaned up:"
-    echo "  ✅ Kubernetes applications and platform services"
-    echo "  ✅ Terraform-managed infrastructure"
-    echo "  ✅ Azure resource groups and resources"
-    echo "  ✅ Service principals and Azure AD applications"
-    echo "  ✅ Local configuration files"
+    echo "  - Kubernetes applications and platform services"
+    echo "  - Terraform-managed infrastructure"
+    echo "  - Azure resource groups and resources"
+    echo "  - Service principals and Azure AD applications"
+    echo "  - Local configuration files"
     echo
     print_warning "Important notes:"
-    echo "  • Resource deletion may take 10-15 minutes to complete"
-    echo "  • Check Azure portal to verify all resources are removed"
-    echo "  • Some resources (Key Vault) may be soft-deleted for 90 days"
-    echo "  • Review your Azure bill to ensure no unexpected charges"
+    echo "  - Resource deletion may take 10-15 minutes to complete"
+    echo "  - Check Azure portal to verify all resources are removed"
+    echo "  - Some resources (Key Vault) may be soft-deleted for 90 days"
+    echo "  - Review your Azure bill to ensure no unexpected charges"
     echo
     print_status "To verify complete cleanup:"
     echo "  az resource list --query \"[?contains(resourceGroup, '${PROJECT_NAME}')]\" -o table"

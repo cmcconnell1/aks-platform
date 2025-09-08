@@ -119,23 +119,41 @@ get_repo_info() {
     print_success "Repository: $REPO_OWNER/$REPO_NAME"
 }
 
-# Set up Azure credentials secrets
+# Set up Azure credentials as environment-specific secrets
 setup_azure_secrets() {
-    print_status "Setting up Azure credentials secrets..."
-    
+    print_status "Setting up Azure credentials as environment-specific secrets..."
+
     # Source the .env file to get variables
     source .env
-    
-    # Set individual Azure secrets
-    echo "$ARM_CLIENT_ID" | gh secret set ARM_CLIENT_ID
-    echo "$ARM_CLIENT_SECRET" | gh secret set ARM_CLIENT_SECRET
-    echo "$ARM_SUBSCRIPTION_ID" | gh secret set ARM_SUBSCRIPTION_ID
-    echo "$ARM_TENANT_ID" | gh secret set ARM_TENANT_ID
-    
-    # Set the complete Azure credentials JSON for azure/login action
-    gh secret set AZURE_CREDENTIALS < github-actions-credentials.json
-    
-    print_success "Azure credentials secrets configured"
+
+    # First, remove any existing repository-level secrets
+    print_status "Removing repository-level Azure secrets (moving to environment-specific)..."
+    gh secret delete ARM_CLIENT_ID 2>/dev/null || true
+    gh secret delete ARM_CLIENT_SECRET 2>/dev/null || true
+    gh secret delete ARM_SUBSCRIPTION_ID 2>/dev/null || true
+    gh secret delete ARM_TENANT_ID 2>/dev/null || true
+    gh secret delete AZURE_CREDENTIALS 2>/dev/null || true
+
+    # Set environment-specific secrets for each environment
+    for env in dev staging prod; do
+        print_status "Setting up Azure secrets for environment: $env"
+
+        # For now, all environments use the same credentials
+        # In production, you would have different service principals per environment
+        echo "$ARM_CLIENT_ID" | gh secret set ARM_CLIENT_ID --env "$env" 2>/dev/null || print_warning "Failed to set ARM_CLIENT_ID for $env"
+        echo "$ARM_CLIENT_SECRET" | gh secret set ARM_CLIENT_SECRET --env "$env" 2>/dev/null || print_warning "Failed to set ARM_CLIENT_SECRET for $env"
+        echo "$ARM_SUBSCRIPTION_ID" | gh secret set ARM_SUBSCRIPTION_ID --env "$env" 2>/dev/null || print_warning "Failed to set ARM_SUBSCRIPTION_ID for $env"
+        echo "$ARM_TENANT_ID" | gh secret set ARM_TENANT_ID --env "$env" 2>/dev/null || print_warning "Failed to set ARM_TENANT_ID for $env"
+
+        # Set the complete Azure credentials JSON for azure/login action
+        gh secret set AZURE_CREDENTIALS --env "$env" < github-actions-credentials.json 2>/dev/null || print_warning "Failed to set AZURE_CREDENTIALS for $env"
+
+        print_success "Azure credentials configured for $env environment"
+    done
+
+    print_success "Azure credentials secrets configured for all environments"
+    print_warning "NOTE: All environments currently use the same credentials"
+    print_status "For production use, create separate service principals per environment"
 }
 
 # Set up optional secrets
@@ -175,13 +193,56 @@ setup_environment_protection() {
         print_status "Go to: https://github.com/$REPO_OWNER/$REPO_NAME/settings/environments"
     done
     
-    print_warning "Environment protection rules must be configured manually:"
-    print_status "1. Go to repository Settings > Environments"
-    print_status "2. For 'staging' and 'prod' environments:"
-    print_status "   - Enable 'Required reviewers'"
-    print_status "   - Add team members as reviewers"
-    print_status "   - Enable 'Wait timer' if desired"
-    print_status "   - Restrict deployment branches to 'main' only"
+    # Create environments and add environment-specific secrets
+    for env in dev staging prod; do
+        print_status "Setting up environment: $env"
+
+        # Create environment using GitHub API
+        gh api \
+            --method PUT \
+            "/repos/$REPO_OWNER/$REPO_NAME/environments/$env" \
+            --field "wait_timer=0" \
+            --field "prevent_self_review=false" \
+            --field "reviewers=[]" \
+            --field "deployment_branch_policy=null" \
+            2>/dev/null || print_warning "Environment '$env' may already exist"
+
+        # Add environment-specific variables
+        case $env in
+            "dev")
+                gh variable set ENVIRONMENT --env "$env" --body "dev" 2>/dev/null || print_warning "Failed to set ENVIRONMENT variable for $env"
+                gh variable set CLUSTER_NAME --env "$env" --body "aks-platform-dev" 2>/dev/null || print_warning "Failed to set CLUSTER_NAME variable for $env"
+                ;;
+            "staging")
+                gh variable set ENVIRONMENT --env "$env" --body "staging" 2>/dev/null || print_warning "Failed to set ENVIRONMENT variable for $env"
+                gh variable set CLUSTER_NAME --env "$env" --body "aks-platform-staging" 2>/dev/null || print_warning "Failed to set CLUSTER_NAME variable for $env"
+                ;;
+            "prod")
+                gh variable set ENVIRONMENT --env "$env" --body "prod" 2>/dev/null || print_warning "Failed to set ENVIRONMENT variable for $env"
+                gh variable set CLUSTER_NAME --env "$env" --body "aks-platform-prod" 2>/dev/null || print_warning "Failed to set CLUSTER_NAME variable for $env"
+                ;;
+        esac
+    done
+
+    # Configure environment protection rules for staging and prod
+    print_status "Configuring environment protection rules..."
+
+    for env in staging prod; do
+        print_status "Setting up protection for: $env"
+
+        # Enable required reviewers for staging and prod
+        gh api \
+            --method PUT \
+            "/repos/$REPO_OWNER/$REPO_NAME/environments/$env" \
+            --field "wait_timer=0" \
+            --field "prevent_self_review=true" \
+            --field "reviewers[0][type]=User" \
+            --field "reviewers[0][id]=$(gh api user --jq '.id')" \
+            2>/dev/null || print_warning "Failed to set protection rules for $env"
+    done
+
+    print_success "GitHub environments created successfully!"
+    print_status "Environment protection configured for staging and prod"
 }
 
 # Verify secrets configuration

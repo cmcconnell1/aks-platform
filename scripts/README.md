@@ -14,6 +14,8 @@ This directory contains automation scripts for setting up and managing the Azure
 | [`cost-dashboard.sh`](#cost-dashboardsh) | HTML dashboard for cost visualization | Shell Script | Azure CLI, Python, jq |
 | [`safe-deployment.sh`](#safe-deploymentsh) | Production-safe deployment with rollback | Shell Script | Azure CLI, kubectl |
 | [`cleanup-infrastructure.sh`](#cleanup-infrastructuresh) | Complete infrastructure removal | Shell Script | Azure CLI, Terraform |
+| [`show-infrastructure.sh`](#show-infrastructuresh) | **Infrastructure overview** (wrapper) | Shell Wrapper | Azure CLI |
+| [`show-infrastructure.py`](#show-infrastructurepy) | Infrastructure overview (core implementation) | Python Core | Azure CLI, Python packages |
 | [`module-check.py`](#module-checkpy) | Python module dependency analysis | Python Utility | None |
 | [`azure_utils.py`](#azure_utilspy) | Shared utilities for Python scripts | Python Module | Azure CLI (optional) |
 | [`setup-python-env.sh`](#setup-python-envsh) | **Python virtual environment setup** | Shell Script | Python 3.7+ |
