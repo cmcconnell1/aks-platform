@@ -18,19 +18,22 @@ on:
 
 env:
   TF_VERSION: '1.7.5'
-  ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
-  ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
-  ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
-  ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
 
 jobs:
   drift-detection:
     name: Drift Detection
     runs-on: ubuntu-latest
+    environment: ${{ matrix.environment }}
     strategy:
       matrix:
         environment: [dev, staging, prod]
-    
+
+    env:
+      ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
+      ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+      ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -156,7 +159,7 @@ jobs:
             }
 
       - name: Send Slack Notification
-        if: steps.check-drift.outputs.drift_detected == 'true' && secrets.SLACK_WEBHOOK_URL
+        if: steps.check-drift.outputs.drift_detected == 'true'
         uses: 8398a7/action-slack@v3
         with:
           status: custom

@@ -4,7 +4,10 @@ on:
   push:
     branches: [main]
     paths:
-      - 'terraform/**'
+      - 'terraform/**/*.tf'
+      - 'terraform/**/*.tfvars'
+      - 'terraform/**/terraform.tfvars.example'
+      - '.github/workflows/terraform-deploy.yml'
   workflow_dispatch:
     inputs:
       environment:
@@ -27,17 +30,19 @@ on:
 
 env:
   TF_VERSION: '1.7.5'
-  ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
-  ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
-  ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
-  ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
 
 jobs:
   terraform-deploy:
     name: Terraform Deploy
     runs-on: ubuntu-latest
     environment: ${{ github.event.inputs.environment || 'dev' }}
-    
+
+    env:
+      ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
+      ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+      ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
