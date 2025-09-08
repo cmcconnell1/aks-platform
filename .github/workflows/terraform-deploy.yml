@@ -47,6 +47,42 @@ jobs:
       ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
       ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
       ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+      # Terraform variables as environment variables
+      TF_VAR_project_name: "aks-platform"
+      TF_VAR_location: "East US"
+      TF_VAR_environment: ${{ github.event.inputs.environment || 'dev' }}
+      TF_VAR_vnet_address_space: '["10.0.0.0/16"]'
+      TF_VAR_aks_subnet_address_prefix: "10.0.1.0/24"
+      TF_VAR_app_gateway_subnet_address_prefix: "10.0.2.0/24"
+      TF_VAR_private_endpoint_subnet_address_prefix: "10.0.3.0/24"
+      TF_VAR_aks_node_count: 2
+      TF_VAR_aks_node_vm_size: "Standard_D2s_v3"
+      TF_VAR_aks_max_node_count: 5
+      TF_VAR_aks_min_node_count: 1
+      TF_VAR_enable_private_cluster: true
+      TF_VAR_enable_spot_instances: false
+      TF_VAR_enable_ai_node_pool: true
+      TF_VAR_ai_node_vm_size: "Standard_NC6s_v3"
+      TF_VAR_ai_node_count: 1
+      TF_VAR_enable_private_endpoints: true
+      TF_VAR_authorized_ip_ranges: '[]'
+      TF_VAR_create_demo_ssl_certificate: true
+      TF_VAR_ssl_certificate_subject: "aks-platform-dev.local"
+      TF_VAR_ssl_certificate_dns_names: '["aks-platform-dev.local", "*.aks-platform-dev.local"]'
+      TF_VAR_enable_cert_manager: false
+      TF_VAR_letsencrypt_email: ""
+      TF_VAR_enable_letsencrypt_staging: true
+      TF_VAR_enable_letsencrypt_prod: false
+      TF_VAR_enable_application_gateway: true
+      TF_VAR_enable_argocd: true
+      TF_VAR_argocd_namespace: "argocd"
+      TF_VAR_enable_ai_tools: true
+      TF_VAR_enable_jupyter_hub: true
+      TF_VAR_enable_mlflow: true
+      TF_VAR_enable_kubeflow: false
+      TF_VAR_enable_monitoring: true
+      TF_VAR_enable_logging: true
+      TF_VAR_tags: '{"Environment":"dev","Project":"AKS-GitOps","ManagedBy":"Terraform","Owner":"DevOps-Team","CostCenter":"Engineering"}'
 
     steps:
       - name: Checkout code
@@ -102,7 +138,6 @@ jobs:
         id: plan
         run: |
           terraform plan \
-            -var-file="environments/${{ steps.set-env.outputs.environment }}/terraform.tfvars" \
             -out="${{ steps.set-env.outputs.environment }}.tfplan"
         working-directory: terraform
 
@@ -118,7 +153,6 @@ jobs:
         if: steps.set-env.outputs.action == 'destroy'
         run: |
           terraform destroy \
-            -var-file="environments/${{ steps.set-env.outputs.environment }}/terraform.tfvars" \
             -auto-approve
         working-directory: terraform
 
