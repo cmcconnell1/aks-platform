@@ -101,11 +101,8 @@ variable "enable_trust_policy" {
   default     = false
 }
 
-variable "enable_quarantine_policy" {
-  description = "Enable quarantine policy"
-  type        = bool
-  default     = false
-}
+# Note: enable_quarantine_policy variable removed as quarantine_policy
+# was deprecated and removed in Azure provider v3.x
 
 # Private Endpoint
 variable "enable_private_endpoint" {

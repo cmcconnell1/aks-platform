@@ -65,10 +65,8 @@ resource "azurerm_container_registry" "main" {
     enabled = var.enable_trust_policy
   }
 
-  # Quarantine policy for vulnerability scanning
-  quarantine_policy {
-    enabled = var.enable_quarantine_policy
-  }
+  # Note: quarantine_policy was deprecated and removed in Azure provider v3.x
+  # Vulnerability scanning is now handled through Azure Security Center/Defender
 
   tags = var.tags
 }
