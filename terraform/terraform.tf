@@ -27,6 +27,14 @@ terraform {
       source  = "hashicorp/helm"
       version = "~> 2.0"
     }
+    kubectl = {
+      source  = "gavinbunney/kubectl"
+      version = "~> 1.14"
+    }
+    http = {
+      source  = "hashicorp/http"
+      version = "~> 3.0"
+    }
   }
 
   # Backend configuration for remote state
@@ -51,7 +59,6 @@ provider "azurerm" {
     
     virtual_machine {
       delete_os_disk_on_deletion     = true
-      graceful_shutdown              = false
       skip_shutdown_and_force_delete = false
     }
   }
@@ -69,6 +76,16 @@ provider "kubernetes" {
 # Configure Helm provider (will be configured after AKS creation)
 provider "helm" {
   # Configuration will be set dynamically after AKS cluster creation
+}
+
+# Configure kubectl provider (will be configured after AKS creation)
+provider "kubectl" {
+  # Configuration will be set dynamically after AKS cluster creation
+}
+
+# Configure HTTP provider (for data sources)
+provider "http" {
+  # No configuration needed
 }
 
 # Data sources for current Azure context
