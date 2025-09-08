@@ -218,6 +218,19 @@ Given variables file environments/dev/terraform.tfvars does not exist.
 **Symptoms:** Python package conflicts or import errors
 **Solution:** Recreate virtual environment: `./scripts/setup-python-env.sh --force`
 
+### Issue: Terraform Dependency Cycle Error
+**Symptoms:**
+```
+Error: Cycle: module.aks.azurerm_role_assignment.aks_acr_pull, module.aks.azurerm_kubernetes_cluster.main
+```
+**Solution:** This was fixed in commit `1e591f6`. The AKS cluster no longer has a circular dependency with the ACR role assignment.
+
+**Why this happens**: The role assignment depends on the kubelet identity from the AKS cluster, so it cannot be a dependency of the cluster itself.
+
+### Issue: Multiple Workflows Running on Same Commit
+**Symptoms:** Both Terraform Deploy and cost-monitoring workflows run on push events
+**Solution:** This was fixed in commit `f86c830`. Cost-monitoring workflow now only runs on schedule or manual dispatch.
+
 ## 📋 Post-Bootstrap Verification
 
 After successful bootstrap, verify:
