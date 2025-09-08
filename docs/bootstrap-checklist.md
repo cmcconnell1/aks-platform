@@ -231,6 +231,18 @@ Error: Cycle: module.aks.azurerm_role_assignment.aks_acr_pull, module.aks.azurer
 **Symptoms:** Both Terraform Deploy and cost-monitoring workflows run on push events
 **Solution:** This was fixed in commit `f86c830`. Cost-monitoring workflow now only runs on schedule or manual dispatch.
 
+### Issue: "Unsupported block type" - quarantine_policy
+**Symptoms:**
+```
+Error: Unsupported block type
+on modules/container_registry/main.tf line 69, in resource "azurerm_container_registry" "main":
+69: quarantine_policy {
+Blocks of type "quarantine_policy" are not expected here.
+```
+**Solution:** This was fixed in commit `9c1a50c`. The deprecated `quarantine_policy` block was removed from the container registry module.
+
+**Why this happens:** The `quarantine_policy` feature was deprecated and removed in Azure provider v3.x. Vulnerability scanning is now handled through Azure Security Center/Defender.
+
 ## 📋 Post-Bootstrap Verification
 
 After successful bootstrap, verify:

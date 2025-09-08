@@ -400,6 +400,12 @@ Error: Cycle: module.aks.azurerm_role_assignment.aks_acr_pull, module.aks.azurer
 ### Issue: Cost-monitoring Workflow Triggering on Push
 **Solution**: Fixed in commit `f86c830` - cost-monitoring now only runs on schedule or manual dispatch.
 
+### Issue: Deprecated quarantine_policy in Container Registry
+```
+Error: Unsupported block type "quarantine_policy"
+```
+**Solution**: Fixed in commit `9c1a50c` - removed deprecated quarantine_policy block from Azure Container Registry.
+
 ### Issue: "Chicken and Egg" Problem
 **Root Cause**: Terraform needs storage account → Storage account needs service principal → Service principal needs Azure access
 
