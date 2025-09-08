@@ -205,8 +205,8 @@ enable_ai_node_pool = false  # Disable expensive GPU nodes initially
 
 ```bash
 # Commit and push to trigger deployment
-git add .
-git commit -m "feat: initial infrastructure setup"
+git add terraform/environments/*/backend.conf
+git commit -m "feat: add Azure backend configuration"
 git push origin main
 ```
 

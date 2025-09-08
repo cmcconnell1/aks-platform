@@ -17,7 +17,7 @@ variable "location" {
 variable "project_name" {
   description = "Name of the project"
   type        = string
-  default     = "aks-gitops"
+  default     = "aks-platform"
 }
 
 # Resource naming
@@ -131,13 +131,13 @@ variable "create_demo_ssl_certificate" {
 variable "ssl_certificate_subject" {
   description = "Subject for SSL certificate"
   type        = string
-  default     = "aks-gitops.local"
+  default     = "aks-platform.local"
 }
 
 variable "ssl_certificate_dns_names" {
   description = "DNS names for SSL certificate"
   type        = list(string)
-  default     = ["aks-gitops.local", "*.aks-gitops.local"]
+  default     = ["aks-platform.local", "*.aks-platform.local"]
 }
 
 # Application Gateway variables

@@ -141,8 +141,8 @@ establish_health_baseline() {
     # Get AKS credentials
     print_status "Connecting to AKS cluster..."
     az aks get-credentials \
-        --resource-group "rg-${PROJECT_NAME:-aks-gitops}-${ENVIRONMENT}" \
-        --name "aks-${PROJECT_NAME:-aks-gitops}-${ENVIRONMENT}" \
+        --resource-group "rg-${PROJECT_NAME:-aks-platform}-${ENVIRONMENT}" \
+        --name "aks-${PROJECT_NAME:-aks-platform}-${ENVIRONMENT}" \
         --overwrite-existing >/dev/null 2>&1 || {
         print_error "Failed to connect to AKS cluster"
         return 1

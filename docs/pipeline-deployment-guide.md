@@ -198,8 +198,8 @@ Set up environment protection rules in GitHub:
 #### Automatic Deployment (Push to Main)
 ```bash
 # Commit your configuration
-git add terraform/environments/
-git commit -m "Configure environments for pipeline deployment"
+git add terraform/environments/*/backend.conf
+git commit -m "feat: add Azure backend configuration"
 git push origin main
 ```
 

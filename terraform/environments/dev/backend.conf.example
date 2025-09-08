@@ -2,6 +2,6 @@
 # Copy this file to backend.conf and update with your values
 
 resource_group_name  = "terraform-state-rg"
-storage_account_name = "tfstateaksgitopsdev"
+storage_account_name = "tfstateaksplatformdev"
 container_name       = "tfstate"
 key                  = "dev/terraform.tfstate"

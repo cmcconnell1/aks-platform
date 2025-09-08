@@ -1,5 +1,5 @@
-# Environment Configuration for Development
-environment = "dev"
+# Environment Configuration for Staging
+environment = "staging"
 location    = "East US"
 project_name = "aks-platform"
 
@@ -29,10 +29,10 @@ authorized_ip_ranges     = [] # Add your IP ranges here
 
 # SSL Certificate Configuration
 create_demo_ssl_certificate = true
-ssl_certificate_subject    = "aks-platform-dev.local"
+ssl_certificate_subject    = "aks-platform-staging.local"
 ssl_certificate_dns_names  = [
-  "aks-platform-dev.local",
-  "*.aks-platform-dev.local"
+  "aks-platform-staging.local",
+  "*.aks-platform-staging.local"
 ]
 
 # Let's Encrypt Configuration (disable demo cert when using Let's Encrypt)
@@ -60,7 +60,7 @@ enable_logging    = true
 
 # Tags
 tags = {
-  Environment = "dev"
+  Environment = "staging"
   Project     = "AKS-GitOps"
   ManagedBy   = "Terraform"
   Owner       = "DevOps-Team"

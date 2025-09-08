@@ -210,7 +210,10 @@ Use the [**Quick Start Guide**](docs/quick-start.md) to get running in 5 minutes
 ```bash
 git clone git@github.com:cmcconnell1/aks-platform.git
 cd aks-platform
-./scripts/setup-azure-credentials.sh
+./scripts/setup-azure-credentials.sh  # Auto-generates terraform.tfvars and backend.conf
+./scripts/setup-github-secrets.sh     # Securely configures GitHub repository secrets
+git add terraform/environments/*/backend.conf
+git commit -m "feat: add Azure backend configuration"
 git push origin main  # Triggers automated deployment
 ```
 

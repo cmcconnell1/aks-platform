@@ -35,7 +35,7 @@ BLUE='\033[0;34m'     # Informational messages and progress updates
 NC='\033[0m'          # Reset to default terminal color
 
 # Default configuration values
-PROJECT_NAME="aks-gitops"
+PROJECT_NAME="aks-platform"
 ENVIRONMENTS=("dev" "staging" "prod")
 FORCE_CLEANUP=false
 SKIP_CONFIRMATION=false
@@ -93,7 +93,7 @@ show_help() {
     echo "Usage: $0 [OPTIONS]"
     echo
     echo "Options:"
-    echo "  --project-name NAME    Project name (default: aks-gitops)"
+    echo "  --project-name NAME    Project name (default: aks-platform)"
     echo "  --force               Force cleanup even if errors occur"
     echo "  --yes                 Skip confirmation prompts"
     echo "  --help                Show this help message"

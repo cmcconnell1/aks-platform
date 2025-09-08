@@ -97,7 +97,7 @@ az group create --name terraform-state-rg --location "East US"
 
 # Create storage account
 az storage account create \
-  --name tfstateaksgitopsdev \
+  --name tfstateaksplatformdev \
   --resource-group terraform-state-rg \
   --location "East US" \
   --sku Standard_LRS \
@@ -106,7 +106,7 @@ az storage account create \
 # Create container
 az storage container create \
   --name tfstate \
-  --account-name tfstateaksgitopsdev
+  --account-name tfstateaksplatformdev
 ```
 
 ## Step 2: GitHub Repository Setup

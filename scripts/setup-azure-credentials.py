@@ -228,7 +228,10 @@ def create_storage_accounts(project_name: str, rg_name: str, location: str,
     timestamp = str(int(time.time()))[-6:]  # Last 6 digits
     
     for env in environments:
-        storage_name = f"{project_name}tfstate{env}{timestamp}"
+        # Ensure storage account name is <= 24 chars (Azure limit)
+        # Format: <short_project>tf<env><timestamp>
+        short_project = project_name.replace('-', '').replace('_', '')[:8]  # Max 8 chars
+        storage_name = f"{short_project}tf{env}{timestamp}"
         
         print_status(f"Creating storage account for {env} environment...")
         
@@ -358,19 +361,54 @@ key                  = "{env}/terraform.tfstate"
         
         print_success(f"Generated backend config for {env} environment")
 
+def generate_terraform_tfvars(project_name: str, location: str, environments: List[str]) -> None:
+    """Generate terraform.tfvars files from examples."""
+    print_status("Generating terraform.tfvars files...")
+
+    for env in environments:
+        env_dir = Path(f"terraform/environments/{env}")
+        tfvars_file = env_dir / "terraform.tfvars"
+        example_file = env_dir / "terraform.tfvars.example"
+
+        if example_file.exists() and not tfvars_file.exists():
+            # Read example file
+            with open(example_file, 'r') as f:
+                content = f.read()
+
+            # Update project name and location in the content
+            content = content.replace('project_name = "aks-platform"', f'project_name = "{project_name}"')
+            content = content.replace('location    = "East US"', f'location    = "{location}"')
+
+            # Write to actual tfvars file
+            with open(tfvars_file, 'w') as f:
+                f.write(content)
+
+            print_success(f"Generated terraform.tfvars for {env} environment")
+        elif tfvars_file.exists():
+            print_warning(f"terraform.tfvars already exists for {env} environment")
+        else:
+            print_warning(f"terraform.tfvars.example not found for {env} environment")
+
 def main():
     """Main function."""
     parser = argparse.ArgumentParser(description='Setup Azure credentials for Terraform')
-    parser.add_argument('--project-name', default='aks-gitops', 
-                       help='Project name (default: aks-gitops)')
-    parser.add_argument('--location', default='East US', 
+    parser.add_argument('--project-name', default='aks-platform',
+                       help='Project name (default: aks-platform)')
+    parser.add_argument('--location', default='East US',
                        help='Azure location (default: East US)')
-    parser.add_argument('--environments', nargs='+', default=['dev', 'staging', 'prod'],
-                       help='Environments to create (default: dev staging prod)')
+    parser.add_argument('--environments', nargs='+', default=['dev'],
+                       help='Environments to create (default: dev)')
+    parser.add_argument('--all-environments', action='store_true',
+                       help='Create storage accounts for all environments (dev, staging, prod)')
     
     args = parser.parse_args()
 
+    # Handle environment selection
+    if args.all_environments:
+        args.environments = ['dev', 'staging', 'prod']
+
     print_status(f"Starting Azure credentials setup for {args.project_name}...")
+    print_status(f"Target environments: {', '.join(args.environments)}")
     print()
 
     # Check Python environment and virtual environment status
@@ -393,6 +431,7 @@ def main():
         
         generate_env_file(args.project_name, azure_info, terraform_sp, storage_accounts)
         generate_backend_configs(args.project_name, rg_name, storage_accounts, args.environments)
+        generate_terraform_tfvars(args.project_name, args.location, args.environments)
         
         # Save GitHub Actions credentials
         if 'sp_output' in github_sp:

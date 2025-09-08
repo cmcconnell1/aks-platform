@@ -93,8 +93,8 @@ enable_grafana = true
 #### Step 4: Deploy via GitHub Actions
 1. Commit and push configuration:
    ```bash
-   git add .
-   git commit -m "Configure deployment for greenfield tenant"
+   git add terraform/environments/*/backend.conf
+   git commit -m "feat: add Azure backend configuration"
    git push origin main
    ```
 

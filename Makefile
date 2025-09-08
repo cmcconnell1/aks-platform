@@ -171,7 +171,7 @@ docs: ## Generate documentation
 # Azure Operations
 azure-setup: ## Set up Azure credentials and infrastructure
 	@echo "Setting up Azure credentials..."
-	./scripts/setup-azure-credentials
+	./scripts/setup-azure-credentials.sh
 
 azure-cost: ## Check Azure costs
 	@echo "Checking Azure costs..."

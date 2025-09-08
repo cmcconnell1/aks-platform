@@ -6,7 +6,7 @@ This directory contains automation scripts for setting up and managing the Azure
 
 | Script | Purpose | Type | Prerequisites |
 |--------|---------|------|---------------|
-| [`setup-azure-credentials`](#setup-azure-credentials) | **Azure setup** (simple wrapper) | Shell Wrapper | Azure CLI |
+| [`setup-azure-credentials.sh`](#setup-azure-credentialssh) | **Azure setup** (simple wrapper) | Shell Wrapper | Azure CLI |
 | [`setup-azure-credentials.py`](#setup-azure-credentialspy) | Azure setup (core implementation) | Python Core | Azure CLI, Python packages |
 | [`setup-github-secrets.sh`](#setup-github-secretssh) | GitHub repository secrets configuration | Shell Script | GitHub CLI |
 | [`cost-monitor.sh`](#cost-monitorsh) | **Unified cost monitoring** (wrapper) | Shell Wrapper | Azure CLI (optional) |
@@ -58,7 +58,7 @@ pip install -r scripts/requirements.txt
 python3 scripts/setup-azure-credentials.py
 
 # With automatic dependency installation
-./scripts/setup-azure-credentials --install-deps
+./scripts/setup-azure-credentials.sh --install-deps
 ```
 
 ### 2. GitHub Integration
@@ -124,7 +124,7 @@ The scripts follow a **hybrid architecture** that provides the best of both worl
 
 ## Detailed Script Documentation
 
-### `setup-azure-credentials`
+### `setup-azure-credentials.sh`
 
 **Purpose**: Simple wrapper for Azure credentials setup that handles dependencies automatically.
 
@@ -137,16 +137,16 @@ The scripts follow a **hybrid architecture** that provides the best of both worl
 **Usage**:
 ```bash
 # Basic setup with defaults
-./scripts/setup-azure-credentials
+./scripts/setup-azure-credentials.sh
 
 # Custom project and location
-./scripts/setup-azure-credentials --project-name "my-project" --location "West US 2"
+./scripts/setup-azure-credentials.sh --project-name "my-project" --location "West US 2"
 
 # Auto-install dependencies
-./scripts/setup-azure-credentials --install-deps
+./scripts/setup-azure-credentials.sh --install-deps
 
 # Get help
-./scripts/setup-azure-credentials --help
+./scripts/setup-azure-credentials.sh --help
 ```
 
 **Prerequisites**:
@@ -593,7 +593,7 @@ pip install requests
 
 | Script | Type | Azure CLI | GitHub CLI | kubectl | Terraform | Python Packages | Other Tools |
 |--------|------|-----------|------------|---------|-----------|------------------|-------------|
-| setup-azure-credentials | Wrapper | Required | - | - | - | - | - |
+| setup-azure-credentials.sh | Wrapper | Required | - | - | - | - | - |
 | setup-azure-credentials.py | Core | Required | - | - | - | azure-* packages | - |
 | setup-github-secrets.sh | Script | - | Required | - | - | - | - |
 | cost-monitor.sh | Wrapper | Optional* | - | - | - | Optional* | bc, cron |

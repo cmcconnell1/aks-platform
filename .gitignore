@@ -31,10 +31,14 @@ Thumbs.db
 # Logs
 *.log
 
-# Environment variables
+# Environment variables and credentials (sensitive - do not commit)
 .env
 .env.local
 .env.*.local
+github-actions-credentials.json
+
+# Azure configuration files (these SHOULD be committed)
+# - terraform/environments/*/backend.conf
 
 # Temporary files
 *.tmp

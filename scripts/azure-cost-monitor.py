@@ -69,7 +69,7 @@ except ImportError as e:
 class AzureCostMonitor:
     """Azure Cost Management client for monitoring platform costs."""
     
-    def __init__(self, subscription_id: str, project_name: str = "aks-gitops"):
+    def __init__(self, subscription_id: str, project_name: str = "aks-platform"):
         """Initialize the cost monitor with Azure credentials."""
         self.subscription_id = subscription_id
         self.project_name = project_name
@@ -300,8 +300,8 @@ def format_cost_report(cost_data: Dict, project_name: str, environment: Optional
 def main():
     """Main function to run the cost monitor."""
     parser = argparse.ArgumentParser(description="Monitor Azure costs for AKS GitOps platform")
-    parser.add_argument('--project-name', default='aks-gitops', 
-                       help='Project name for cost filtering (default: aks-gitops)')
+    parser.add_argument('--project-name', default='aks-platform',
+                       help='Project name for cost filtering (default: aks-platform)')
     parser.add_argument('--environment', choices=['dev', 'staging', 'prod'],
                        help='Specific environment to monitor')
     parser.add_argument('--days', type=int, default=30,

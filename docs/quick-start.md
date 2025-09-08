@@ -76,8 +76,14 @@ Choose your preferred script:
 This creates:
 - Storage accounts for Terraform state
 - Service principals with proper permissions
-- Backend configuration files
-- Environment-specific variable files
+- Backend configuration files (`terraform/environments/*/backend.conf`)
+- GitHub Actions credentials (`github-actions-credentials.json`)
+- Environment variables file (`.env`)
+
+**Important**:
+- **Backend config files** (`backend.conf`) - Safe to commit, contain non-sensitive configuration
+- **Credential files** (`.env`, `github-actions-credentials.json`) - Contain secrets, never committed
+- **GitHub secrets** - Configured securely via `setup-github-secrets.sh` script
 
 ### 5. GitHub Setup
 
@@ -91,11 +97,12 @@ This configures:
 - Optional integrations (Infracost, Slack)
 - Environment protection guidance
 
-### 5. Configure Your Environment
+### 6. Configure Your Environment
 
 Edit the generated configuration:
 
 ```bash
+# The setup script automatically generates terraform.tfvars from the example template
 # Update with your domain and IP ranges
 vim terraform/environments/dev/terraform.tfvars
 ```
@@ -121,11 +128,11 @@ enable_cert_manager = false
 authorized_ip_ranges = ["your.public.ip.address/32"]
 ```
 
-### 6. Deploy via GitHub Actions
+### 7. Deploy via GitHub Actions
 
 ```bash
-git add .
-git commit -m "Initial infrastructure configuration"
+git add terraform/environments/*/backend.conf
+git commit -m "feat: add Azure backend configuration"
 git push origin main
 ```
 
@@ -133,11 +140,13 @@ Or create a pull request for review:
 
 ```bash
 git checkout -b feature/initial-setup
-git add .
-git commit -m "Initial infrastructure configuration"
+git add terraform/environments/*/backend.conf
+git commit -m "feat: add Azure backend configuration"
 git push origin feature/initial-setup
 # Create PR in GitHub UI
 ```
+
+**Note**: GitHub Actions credentials are securely stored as repository secrets, not committed to the repository.
 
 ## What You Get
 

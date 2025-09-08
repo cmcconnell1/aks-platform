@@ -12,8 +12,8 @@
 # 4. Simple command-line interface
 #
 # Usage:
-#   ./scripts/setup-azure-credentials [OPTIONS]
-#   ./scripts/setup-azure-credentials --project-name "my-project" --location "East US 2"
+#   ./scripts/setup-azure-credentials.sh [OPTIONS]
+#   ./scripts/setup-azure-credentials.sh --project-name "my-project" --location "East US 2"
 
 set -e
 
@@ -114,7 +114,7 @@ show_help() {
     echo "Usage: $0 [OPTIONS]"
     echo
     echo "Options:"
-    echo "  --project-name NAME    Project name (default: aks-gitops)"
+    echo "  --project-name NAME    Project name (default: aks-platform)"
     echo "  --location LOCATION    Azure region (default: East US)"
     echo "  --install-deps         Install Python dependencies automatically"
     echo "  --help                 Show this help message"

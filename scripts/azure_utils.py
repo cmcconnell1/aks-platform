@@ -294,7 +294,7 @@ class ConfigManager:
     
     def __init__(self, config_file: Optional[str] = None):
         """Initialize configuration manager."""
-        self.config_file = config_file or os.path.expanduser('~/.azure-gitops-config.json')
+        self.config_file = config_file or os.path.expanduser('~/.azure-platform-config.json')
         self.config = self.load_config()
     
     def load_config(self) -> Dict:

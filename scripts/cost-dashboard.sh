@@ -23,7 +23,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/venv-utils.sh"
 
 # Default configuration
-PROJECT_NAME="aks-gitops"
+PROJECT_NAME="aks-platform"
 OUTPUT_FILE="cost-dashboard.html"
 SERVE=false
 PORT=8080
@@ -55,7 +55,7 @@ show_help() {
     echo "Usage: $0 [OPTIONS]"
     echo
     echo "Options:"
-    echo "  --project-name NAME    Project name (default: aks-gitops)"
+    echo "  --project-name NAME    Project name (default: aks-platform)"
     echo "  --output FILE          Output HTML file (default: cost-dashboard.html)"
     echo "  --serve               Serve dashboard via HTTP"
     echo "  --port PORT           HTTP server port (default: 8080)"
