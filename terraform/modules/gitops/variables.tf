@@ -1,3 +1,13 @@
+variable "environment" {
+  description = "Environment name (e.g., dev, staging, prod)"
+  type        = string
+}
+
+variable "cluster_name" {
+  description = "Name of the AKS cluster"
+  type        = string
+}
+
 variable "argocd_namespace" {
   description = "Namespace for ArgoCD"
   type        = string
@@ -46,6 +56,18 @@ variable "enable_notifications" {
   default     = false
 }
 
+variable "service_type" {
+  description = "Service type for ArgoCD server"
+  type        = string
+  default     = "ClusterIP"
+}
+
+variable "service_annotations" {
+  description = "Annotations for ArgoCD server service"
+  type        = map(string)
+  default     = {}
+}
+
 variable "enable_ingress" {
   description = "Enable ingress for ArgoCD server"
   type        = bool
@@ -60,6 +82,12 @@ variable "ingress_annotations" {
     "appgw.ingress.kubernetes.io/ssl-redirect"       = "true"
     "appgw.ingress.kubernetes.io/backend-protocol"   = "http"
   }
+}
+
+variable "ingress_hosts" {
+  description = "Hosts for ArgoCD ingress"
+  type        = list(string)
+  default     = []
 }
 
 variable "ingress_tls" {

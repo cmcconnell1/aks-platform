@@ -9,6 +9,16 @@ resource "kubernetes_namespace" "argocd" {
   }
 }
 
+# Data source to get ArgoCD initial admin secret
+data "kubernetes_secret" "argocd_initial_admin_secret" {
+  metadata {
+    name      = "argocd-initial-admin-secret"
+    namespace = kubernetes_namespace.argocd.metadata[0].name
+  }
+
+  depends_on = [helm_release.argocd]
+}
+
 # ArgoCD installation using Helm
 resource "helm_release" "argocd" {
   name       = "argocd"
