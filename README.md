@@ -406,6 +406,12 @@ Error: Unsupported block type "quarantine_policy"
 ```
 **Solution**: Fixed in commit `9c1a50c` - removed deprecated quarantine_policy block from Azure Container Registry.
 
+### Issue: Spot Instance Configuration in Default Node Pool
+```
+Error: Unsupported argument "priority" in default node pool
+```
+**Solution**: Fixed in commit `eedd0ee` - removed spot instance config from default node pool (system workloads require guaranteed availability).
+
 ### Issue: "Chicken and Egg" Problem
 **Root Cause**: Terraform needs storage account → Storage account needs service principal → Service principal needs Azure access
 

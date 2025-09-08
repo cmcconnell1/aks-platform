@@ -243,6 +243,17 @@ Blocks of type "quarantine_policy" are not expected here.
 
 **Why this happens:** The `quarantine_policy` feature was deprecated and removed in Azure provider v3.x. Vulnerability scanning is now handled through Azure Security Center/Defender.
 
+### Issue: "Unsupported argument" - Spot instance config in default node pool
+**Symptoms:**
+```
+Error: Unsupported argument
+on modules/aks/main.tf line 28: priority = var.enable_spot_instances ? "Spot" : "Regular"
+An argument named "priority" is not expected here.
+```
+**Solution:** This was fixed in commit `eedd0ee`. Removed spot instance configuration from the default node pool.
+
+**Why this happens:** The default node pool in AKS cannot use spot instances as it runs critical system components that require guaranteed availability. Spot instances should only be configured in additional user node pools.
+
 ## 📋 Post-Bootstrap Verification
 
 After successful bootstrap, verify:
