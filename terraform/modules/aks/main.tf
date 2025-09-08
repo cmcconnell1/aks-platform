@@ -98,8 +98,7 @@ resource "azurerm_kubernetes_cluster" "main" {
   tags = var.tags
 
   depends_on = [
-    azurerm_role_assignment.aks_network_contributor,
-    azurerm_role_assignment.aks_acr_pull
+    azurerm_role_assignment.aks_network_contributor
   ]
 }
 
