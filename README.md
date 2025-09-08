@@ -196,28 +196,70 @@ Monitor your Azure spending with built-in cost monitoring tools:
 
 ## Quick Start
 
-Choose your deployment scenario:
+⚠️ **Important**: This project requires a **greenfield bootstrap process** to avoid the "chicken and egg" problem with Terraform state backends and provider dependencies.
 
-### New to Azure
+### 🚀 **Greenfield Bootstrap (Required for New Deployments)**
+
+**Step 1: Environment Setup**
+```bash
+git clone git@github.com:cmcconnell1/aks-platform.git
+cd aks-platform
+
+# Set up Python virtual environment and dependencies
+./scripts/setup-python-env.sh
+source venv/bin/activate
+
+# Verify environment
+python3 scripts/check-python-env.py
+```
+
+**Step 2: Azure Infrastructure Bootstrap**
+```bash
+# Authenticate with Azure
+az login
+az account set --subscription "your-subscription-id"
+
+# Create foundational infrastructure (storage accounts, service principals)
+./scripts/setup-azure-credentials.sh --project-name "aks-platform" --location "East US"
+
+# Configure GitHub secrets for CI/CD
+gh auth login
+./scripts/setup-github-secrets.sh
+```
+
+**Step 3: Commit Bootstrap Configuration**
+```bash
+# Add generated backend configurations
+git add terraform/environments/*/backend.conf
+git add terraform/environments/*/terraform.tfvars
+git commit -m "feat: add Azure backend configuration and environment variables"
+git push origin main  # This will now trigger successful deployment
+```
+
+### 🔄 **Why Bootstrap is Required**
+
+The platform has these dependencies that must be created in order:
+1. **Storage Account** → Required for Terraform state backend
+2. **Service Principal** → Required for Terraform Azure authentication
+3. **Provider Declarations** → Required for kubectl and http providers (cert-manager)
+4. **GitHub Secrets** → Required for CI/CD pipeline authentication
+
+### 📋 **Deployment Scenarios**
+
+#### New to Azure
 Start with the [**Greenfield Setup Guide**](docs/greenfield-setup-guide.md) for a complete walkthrough including:
 - Azure account setup and permissions
 - Cost estimation and optimization
 - Step-by-step deployment process
 
-### Quick Deployment
-Use the [**Quick Start Guide**](docs/quick-start.md) to get running in 5 minutes:
+#### Bootstrap Validation
+Use the [**Bootstrap Checklist**](docs/bootstrap-checklist.md) to ensure proper setup:
+- Complete prerequisite validation
+- Step-by-step bootstrap verification
+- Common issue troubleshooting
+- Success criteria validation
 
-```bash
-git clone git@github.com:cmcconnell1/aks-platform.git
-cd aks-platform
-./scripts/setup-azure-credentials.sh  # Auto-generates terraform.tfvars and backend.conf
-./scripts/setup-github-secrets.sh     # Securely configures GitHub repository secrets
-git add terraform/environments/*/backend.conf
-git commit -m "feat: add Azure backend configuration"
-git push origin main  # Triggers automated deployment
-```
-
-### Existing Azure Environment
+#### Existing Azure Environment
 See the [**Existing Infrastructure Guide**](docs/existing-infrastructure-guide.md) for:
 - Integration with existing AKS clusters
 - IP range and naming customization
@@ -316,6 +358,43 @@ python3 scripts/manage-dependencies.py freeze
 | [**Troubleshooting**](docs/troubleshooting.md) | Common issues and solutions |
 | [**Production Update Strategy**](docs/production-update-strategy.md) | Safe production deployment procedures |
 | [**Cleanup Guide**](docs/cleanup-guide.md) | Complete infrastructure removal |
+
+## 🚨 Common Bootstrap Issues & Solutions
+
+### Issue: "Storage Account Not Found" Error
+```
+Error: retrieving Storage Account: ResourceNotFound
+```
+**Solution**: Run the bootstrap process first:
+```bash
+./scripts/setup-azure-credentials.sh --project-name "aks-platform"
+```
+
+### Issue: "kubectl provider not found" Error
+```
+Error: Failed to query available provider packages
+Could not retrieve the list of available versions for provider hashicorp/kubectl
+```
+**Solution**: This was fixed in commit `b0ba3a1`. Update your terraform.tf:
+```hcl
+kubectl = {
+  source  = "gavinbunney/kubectl"
+  version = "~> 1.14"
+}
+```
+
+### Issue: Multiple Workflow Runs on Same Commit
+**Solution**: The terraform-deploy workflow now includes concurrency control:
+```yaml
+concurrency:
+  group: terraform-deploy-${{ github.ref }}
+  cancel-in-progress: false
+```
+
+### Issue: "Chicken and Egg" Problem
+**Root Cause**: Terraform needs storage account → Storage account needs service principal → Service principal needs Azure access
+
+**Solution**: Always run the complete bootstrap sequence before attempting Terraform deployment.
 
 ## Support
 

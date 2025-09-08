@@ -20,6 +20,7 @@ This directory contains automation scripts for setting up and managing the Azure
 | [`azure_utils.py`](#azure_utilspy) | Shared utilities for Python scripts | Python Module | Azure CLI (optional) |
 | [`setup-python-env.sh`](#setup-python-envsh) | **Python virtual environment setup** | Shell Script | Python 3.7+ |
 | [`check-python-env.py`](#check-python-envpy) | Python environment checker | Python Utility | None |
+| [`validate-bootstrap.sh`](#validate-bootstrapsh) | **Bootstrap validation and readiness check** | Shell Script | Azure CLI, Terraform |
 | [`manage-dependencies.py`](#manage-dependenciespy) | Dependency management and security audit | Python Utility | Virtual environment |
 | [`venv-utils.sh`](#venv-utilssh) | Virtual environment utilities for shell scripts | Shell Library | None |
 
@@ -54,7 +55,7 @@ pip install -r scripts/requirements.txt
 ### 1. Initial Azure Setup
 ```bash
 # Simple wrapper (recommended - handles dependencies automatically)
-./scripts/setup-azure-credentials
+./scripts/setup-azure-credentials.sh
 
 # Direct Python script (advanced users)
 python3 scripts/setup-azure-credentials.py
@@ -63,7 +64,16 @@ python3 scripts/setup-azure-credentials.py
 ./scripts/setup-azure-credentials.sh --install-deps
 ```
 
-### 2. GitHub Integration
+### 2. Bootstrap Validation
+```bash
+# Validate that bootstrap completed successfully
+./scripts/validate-bootstrap.sh
+
+# Validate specific project/environment
+./scripts/validate-bootstrap.sh --project-name "my-project" --environment prod
+```
+
+### 3. GitHub Integration
 ```bash
 # Configure GitHub repository secrets
 gh auth login
@@ -695,6 +705,45 @@ python3 scripts/manage-dependencies.py freeze
 # Show outdated packages
 python3 scripts/manage-dependencies.py outdated
 ```
+
+### `validate-bootstrap.sh`
+
+**Purpose**: Comprehensive bootstrap validation script that ensures all prerequisites and configurations are in place for successful Terraform deployment.
+
+**Key Features**:
+- **Prerequisites checking**: Validates Azure CLI, Terraform, Python, and other required tools
+- **Configuration validation**: Checks backend.conf and terraform.tfvars files
+- **Azure resource verification**: Confirms storage accounts and containers exist
+- **Provider validation**: Ensures all Terraform providers are correctly configured
+- **Terraform initialization test**: Validates that Terraform can initialize successfully
+- **Detailed reporting**: Provides clear success/failure status with actionable guidance
+
+**Usage**:
+```bash
+# Basic validation with defaults
+./scripts/validate-bootstrap.sh
+
+# Validate specific project and environment
+./scripts/validate-bootstrap.sh --project-name "my-project" --environment prod
+
+# Get help
+./scripts/validate-bootstrap.sh --help
+```
+
+**Validation Checks**:
+1. **Prerequisites**: Azure CLI authentication, Terraform installation, Python environment
+2. **Backend Configuration**: Validates backend.conf file structure and required fields
+3. **Terraform Variables**: Checks terraform.tfvars file existence and key variables
+4. **Azure Resources**: Verifies storage account and container accessibility
+5. **Provider Configuration**: Ensures all required providers are declared correctly
+6. **Terraform Initialization**: Tests actual Terraform init process
+
+**Common Issues Detected**:
+- Missing or incorrect kubectl provider source (should be gavinbunney/kubectl)
+- Storage account not found (bootstrap not completed)
+- Missing backend configuration files
+- Authentication issues with Azure or GitHub
+- Virtual environment not activated
 
 ### `venv-utils.sh`
 
