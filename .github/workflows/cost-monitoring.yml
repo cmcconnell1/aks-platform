@@ -34,6 +34,8 @@ jobs:
   cost-monitoring:
     name: Azure Cost Monitoring
     runs-on: ubuntu-latest
+    # Temporarily disabled to prevent unwanted triggers during development
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     
     steps:
       - name: Checkout code
@@ -176,6 +178,8 @@ jobs:
   dependency-check:
     name: Check Python Dependencies
     runs-on: ubuntu-latest
+    # Temporarily disabled to prevent unwanted triggers during development
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     
     steps:
       - name: Checkout code
