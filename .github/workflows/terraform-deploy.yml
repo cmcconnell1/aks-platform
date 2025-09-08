@@ -1,5 +1,10 @@
 name: Terraform Deploy
 
+# Prevent concurrent runs of this workflow
+concurrency:
+  group: terraform-deploy-${{ github.ref }}
+  cancel-in-progress: false
+
 on:
   push:
     branches: [main]
