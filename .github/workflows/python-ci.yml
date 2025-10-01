@@ -1,0 +1,261 @@
+name: Python CI
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'scripts/**/*.py'
+      - 'scripts/requirements*.txt'
+      - 'pyproject.toml'
+      - 'setup.cfg'
+      - '.github/workflows/python-ci.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'scripts/**/*.py'
+      - 'scripts/requirements*.txt'
+      - 'pyproject.toml'
+      - 'setup.cfg'
+      - '.github/workflows/python-ci.yml'
+  workflow_dispatch:
+
+env:
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  test:
+    name: Test Python Scripts
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.8', '3.9', '3.10', '3.11']
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Create virtual environment
+        run: |
+          python -m venv venv
+          echo "VIRTUAL_ENV=$PWD/venv" >> $GITHUB_ENV
+          echo "$PWD/venv/bin" >> $GITHUB_PATH
+
+      - name: Activate virtual environment and upgrade pip
+        run: |
+          source venv/bin/activate
+          python -m pip install --upgrade pip
+
+      - name: Install dependencies
+        run: |
+          source venv/bin/activate
+          pip install -r scripts/requirements.txt
+          pip install -r scripts/requirements-dev.txt
+
+      - name: Check Python environment
+        run: |
+          source venv/bin/activate
+          python scripts/check-python-env.py
+
+      - name: Run dependency checks
+        run: |
+          source venv/bin/activate
+          python scripts/manage-dependencies.py check
+
+      - name: Run linting
+        run: |
+          source venv/bin/activate
+          flake8 scripts/ --max-line-length=88 --extend-ignore=E203,W503
+          pylint scripts/*.py --max-line-length=88 || true
+
+      - name: Run type checking
+        run: |
+          source venv/bin/activate
+          mypy scripts/ --ignore-missing-imports || true
+
+      - name: Run security checks
+        run: |
+          source venv/bin/activate
+          bandit -r scripts/ -f json || true
+          pip-audit --format=json || true
+
+      - name: Test module imports
+        run: |
+          source venv/bin/activate
+          python scripts/module-check.py scripts/setup-azure-credentials.py
+          python scripts/module-check.py scripts/azure-cost-monitor.py
+
+  dependency-audit:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Create virtual environment
+        run: |
+          python -m venv venv
+          echo "VIRTUAL_ENV=$PWD/venv" >> $GITHUB_ENV
+          echo "$PWD/venv/bin" >> $GITHUB_PATH
+
+      - name: Install dependencies
+        run: |
+          source venv/bin/activate
+          python -m pip install --upgrade pip
+          pip install -r scripts/requirements.txt
+          pip install pip-audit safety
+
+      - name: Run pip-audit
+        run: |
+          source venv/bin/activate
+          pip-audit --format=json --output=pip-audit-report.json || true
+
+      - name: Run safety check
+        run: |
+          source venv/bin/activate
+          safety check --json --output=safety-report.json || true
+
+      - name: Upload security reports
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: security-reports-${{ github.run_id }}
+          path: |
+            pip-audit-report.json
+            safety-report.json
+          retention-days: 30
+
+  code-quality:
+    name: Code Quality
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Create virtual environment
+        run: |
+          python -m venv venv
+          echo "VIRTUAL_ENV=$PWD/venv" >> $GITHUB_ENV
+          echo "$PWD/venv/bin" >> $GITHUB_PATH
+
+      - name: Install dependencies
+        run: |
+          source venv/bin/activate
+          python -m pip install --upgrade pip
+          pip install -r scripts/requirements.txt
+          pip install -r scripts/requirements-dev.txt
+
+      - name: Check code formatting with black
+        run: |
+          source venv/bin/activate
+          black --check --diff scripts/
+
+      - name: Check import sorting with isort
+        run: |
+          source venv/bin/activate
+          isort --check-only --diff scripts/
+
+      - name: Run comprehensive linting
+        run: |
+          source venv/bin/activate
+          flake8 scripts/ --statistics --tee --output-file=flake8-report.txt
+
+      - name: Upload code quality reports
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: code-quality-reports-${{ github.run_id }}
+          path: |
+            flake8-report.txt
+          retention-days: 30
+
+  virtual-env-test:
+    name: Test Virtual Environment Setup
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ['3.8', '3.11']
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Test virtual environment setup script (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          chmod +x scripts/setup-python-env.sh
+          ./scripts/setup-python-env.sh --venv-name test-venv
+          source test-venv/bin/activate
+          python scripts/check-python-env.py
+
+      - name: Test virtual environment setup script (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          # Use Git Bash on Windows
+          chmod +x scripts/setup-python-env.sh
+          ./scripts/setup-python-env.sh --venv-name test-venv
+          source test-venv/Scripts/activate
+          python scripts/check-python-env.py
+
+      - name: Test dependency management
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            source test-venv/Scripts/activate
+          else
+            source test-venv/bin/activate
+          fi
+          python scripts/manage-dependencies.py check
+          python scripts/manage-dependencies.py outdated || true
+
+  makefile-test:
+    name: Test Makefile Commands
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Test Makefile setup
+        run: |
+          make setup-dev
+
+      - name: Test Makefile status
+        run: |
+          make status
+
+      - name: Test Makefile check (allow failures)
+        run: |
+          make check || true
+
+      - name: Test Makefile clean
+        run: |
+          make clean

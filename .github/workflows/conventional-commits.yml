@@ -1,0 +1,69 @@
+name: Conventional Commits
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize]
+
+jobs:
+  conventional-commits:
+    name: Validate Conventional Commits
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate Conventional Commits
+        uses: wagoid/commitlint-github-action@v5
+        with:
+          configFile: .commitlintrc.json
+          failOnWarnings: false
+          helpURL: https://www.conventionalcommits.org/
+
+      - name: Comment PR with commit guidelines
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const message = `## Conventional Commit Validation Failed
+            
+            Your commit messages don't follow the [Conventional Commits](https://www.conventionalcommits.org/) specification.
+            
+            ### Required Format:
+            \`\`\`
+            <type>[optional scope]: <description>
+            
+            [optional body]
+            
+            [optional footer(s)]
+            \`\`\`
+            
+            ### Valid Types:
+            - **feat**: A new feature
+            - **fix**: A bug fix
+            - **docs**: Documentation only changes
+            - **style**: Changes that do not affect the meaning of the code
+            - **refactor**: A code change that neither fixes a bug nor adds a feature
+            - **perf**: A code change that improves performance
+            - **test**: Adding missing tests or correcting existing tests
+            - **build**: Changes that affect the build system or external dependencies
+            - **ci**: Changes to our CI configuration files and scripts
+            - **chore**: Other changes that don't modify src or test files
+            - **revert**: Reverts a previous commit
+            
+            ### Examples:
+            - \`feat(auth): add OAuth2 authentication\`
+            - \`fix(api): resolve timeout issue in user endpoint\`
+            - \`docs: update deployment guide\`
+            - \`ci: add conventional commit validation\`
+            
+            Please update your commit messages and force push to this branch.`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: message
+            });

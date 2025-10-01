@@ -1,0 +1,102 @@
+# Terraform
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+.terraform/
+.terraform.lock.hcl
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+*.tfplan
+
+# Azure
+.azure/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Environment variables and credentials (sensitive - do not commit)
+.env
+.env.local
+.env.*.local
+github-actions-credentials.json
+
+# Azure configuration files (these SHOULD be committed)
+# - terraform/environments/*/backend.conf
+
+# Temporary files
+*.tmp
+*.temp
+
+# Backup files
+*.backup
+*.bak
+
+# Secrets
+secrets/
+*.pem
+*.key
+*.crt
+
+# Local scripts
+local/
+temp/
+
+# Node modules (if using any JS tools)
+node_modules/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Docker
+.dockerignore
+
+# AI Assistant Tools and Configurations
+.augment/
+.cursor/
+.continue/
+.codeium/
+.copilot/
+.tabnine/
+.aider/
+.gpt-engineer/
+.chatgpt/
+.claude/
+CLAUDE.md
+.bard/
+.ai-config/
+.llm/
+.openai/
+.anthropic/
+ai-rules
+ai-config
+.ai-rules
+.ai-config
+*.ai-rules
+*.ai-config

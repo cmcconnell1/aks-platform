@@ -1,0 +1,212 @@
+name: Cost Monitoring
+
+on:
+  schedule:
+    # Run daily at 8 AM UTC
+    - cron: '0 8 * * *'
+  workflow_dispatch:
+    inputs:
+      project_name:
+        description: 'Project name for cost filtering'
+        required: false
+        default: 'aks-platform'
+      environment:
+        description: 'Environment to monitor'
+        required: false
+        type: choice
+        options:
+          - all
+          - dev
+          - staging
+          - prod
+      days:
+        description: 'Number of days to analyze'
+        required: false
+        default: '30'
+      budget_alert:
+        description: 'Budget limit for alerts (USD)'
+        required: false
+
+env:
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  cost-monitoring:
+    name: Azure Cost Monitoring
+    runs-on: ubuntu-latest
+    # Temporarily disabled to prevent unwanted triggers during development
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Setup Python Virtual Environment
+        run: |
+          python -m venv venv
+          echo "VIRTUAL_ENV=$PWD/venv" >> $GITHUB_ENV
+          echo "$PWD/venv/bin" >> $GITHUB_PATH
+          source venv/bin/activate
+          python -m pip install --upgrade pip
+          pip install -r scripts/requirements.txt
+
+      - name: Setup Azure CLI
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Validate Python Environment
+        run: |
+          source venv/bin/activate
+          python scripts/check-python-env.py
+
+      - name: Run Cost Monitoring
+        run: |
+          source venv/bin/activate
+          
+          # Set parameters from workflow inputs or defaults
+          PROJECT_NAME="${{ github.event.inputs.project_name || 'aks-platform' }}"
+          ENVIRONMENT="${{ github.event.inputs.environment || 'all' }}"
+          DAYS="${{ github.event.inputs.days || '30' }}"
+          BUDGET_ALERT="${{ github.event.inputs.budget_alert }}"
+          
+          # Build command
+          CMD="python scripts/azure-cost-monitor.py --project-name $PROJECT_NAME"
+          
+          if [ "$ENVIRONMENT" != "all" ]; then
+            CMD="$CMD --environment $ENVIRONMENT"
+          fi
+          
+          if [ "$DAYS" != "30" ]; then
+            CMD="$CMD --days $DAYS"
+          fi
+          
+          if [ -n "$BUDGET_ALERT" ]; then
+            CMD="$CMD --budget-alert $BUDGET_ALERT"
+          fi
+          
+          # Export results to JSON for artifact upload
+          CMD="$CMD --export cost-report.json"
+          
+          echo "Running: $CMD"
+          eval $CMD
+
+      - name: Upload Cost Report
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: cost-report-${{ github.run_id }}
+          path: cost-report.json
+          retention-days: 90
+
+      - name: Generate Cost Dashboard
+        run: |
+          source venv/bin/activate
+          ./scripts/cost-dashboard.sh --project-name "${{ github.event.inputs.project_name || 'aks-platform' }}" --output cost-dashboard.html
+
+      - name: Upload Cost Dashboard
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: cost-dashboard-${{ github.run_id }}
+          path: cost-dashboard.html
+          retention-days: 30
+
+      - name: Check Budget Alerts
+        if: github.event.inputs.budget_alert != ''
+        run: |
+          source venv/bin/activate
+          
+          # Extract total cost from the JSON report
+          if [ -f "cost-report.json" ]; then
+            TOTAL_COST=$(jq -r '.total_cost // 0' cost-report.json)
+            BUDGET_LIMIT="${{ github.event.inputs.budget_alert }}"
+            
+            echo "Total Cost: $TOTAL_COST USD"
+            echo "Budget Limit: $BUDGET_LIMIT USD"
+            
+            # Compare costs (using bc for floating point comparison)
+            if command -v bc >/dev/null 2>&1; then
+              if [ $(echo "$TOTAL_COST > $BUDGET_LIMIT" | bc -l) -eq 1 ]; then
+                echo "::warning::Budget Alert: Current costs ($TOTAL_COST USD) exceed budget limit ($BUDGET_LIMIT USD)"
+                echo "BUDGET_EXCEEDED=true" >> $GITHUB_ENV
+              else
+                echo "Budget OK: Current costs ($TOTAL_COST USD) are within budget limit ($BUDGET_LIMIT USD)"
+              fi
+            fi
+          fi
+
+      - name: Send Budget Alert Notification
+        if: env.BUDGET_EXCEEDED == 'true'
+        uses: 8398a7/action-slack@v3
+        with:
+          status: custom
+          custom_payload: |
+            {
+              "text": "Budget Alert for ${{ github.event.inputs.project_name || 'aks-platform' }}",
+              "attachments": [
+                {
+                  "color": "danger",
+                  "fields": [
+                    {
+                      "title": "Project",
+                      "value": "${{ github.event.inputs.project_name || 'aks-platform' }}",
+                      "short": true
+                    },
+                    {
+                      "title": "Environment",
+                      "value": "${{ github.event.inputs.environment || 'all' }}",
+                      "short": true
+                    },
+                    {
+                      "title": "Budget Exceeded",
+                      "value": "Current costs exceed budget limit of ${{ github.event.inputs.budget_alert }} USD",
+                      "short": false
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        continue-on-error: true  # Don't fail the workflow if Slack notification fails
+
+  dependency-check:
+    name: Check Python Dependencies
+    runs-on: ubuntu-latest
+    # Temporarily disabled to prevent unwanted triggers during development
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Setup Python Virtual Environment
+        run: |
+          python -m venv venv
+          echo "VIRTUAL_ENV=$PWD/venv" >> $GITHUB_ENV
+          echo "$PWD/venv/bin" >> $GITHUB_PATH
+          source venv/bin/activate
+          python -m pip install --upgrade pip
+          pip install -r scripts/requirements.txt
+          pip install pip-audit safety
+
+      - name: Run Dependency Security Audit
+        run: |
+          source venv/bin/activate
+          python scripts/manage-dependencies.py audit
+
+      - name: Check for Outdated Packages
+        run: |
+          source venv/bin/activate
+          python scripts/manage-dependencies.py outdated || true

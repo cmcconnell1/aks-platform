@@ -1,0 +1,219 @@
+# Modern Python project configuration for Azure AKS GitOps Platform
+# This file follows PEP 518 standards for Python project configuration
+
+[build-system]
+requires = ["setuptools>=45", "wheel", "setuptools_scm[toml]>=6.2"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aks-platform"
+version = "1.0.0"
+description = "Azure AKS GitOps Platform with Infrastructure as Code"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "Azure AKS GitOps Platform Team"},
+]
+maintainers = [
+    {name = "Azure AKS GitOps Platform Team"},
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: System :: Systems Administration",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+requires-python = ">=3.7"
+dependencies = [
+    "azure-cli>=2.40.0",
+    "azure-identity>=1.12.0",
+    "azure-mgmt-storage>=20.0.0",
+    "azure-mgmt-authorization>=3.0.0",
+    "azure-mgmt-costmanagement>=4.0.0",
+    "azure-mgmt-resource>=22.0.0",
+    "requests>=2.28.0",
+    "pyyaml>=6.0",
+    "click>=8.0.0",
+    "colorama>=0.4.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "black>=23.0.0",
+    "flake8>=6.0.0",
+    "pylint>=3.0.0",
+    "mypy>=1.0.0",
+    "isort>=5.12.0",
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-mock>=3.10.0",
+    "pip-tools>=7.0.0",
+    "pip-audit>=2.6.0",
+    "bandit>=1.7.0",
+    "safety>=2.3.0",
+]
+test = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-mock>=3.10.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-xdist>=3.3.0",
+    "factory-boy>=3.3.0",
+    "faker>=19.0.0",
+    "responses>=0.23.0",
+]
+docs = [
+    "sphinx>=7.0.0",
+    "sphinx-rtd-theme>=1.3.0",
+    "myst-parser>=2.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/cmcconnell1/aks-platform"
+Documentation = "https://github.com/cmcconnell1/aks-platform/docs"
+Repository = "https://github.com/cmcconnell1/aks-platform"
+Issues = "https://github.com/cmcconnell1/aks-platform/issues"
+
+[project.scripts]
+setup-azure-credentials = "scripts.setup_azure_credentials:main"
+azure-cost-monitor = "scripts.azure_cost_monitor:main"
+check-python-env = "scripts.check_python_env:main"
+
+# Black configuration
+[tool.black]
+line-length = 88
+target-version = ['py37', 'py38', 'py39', 'py310', 'py311']
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | venv
+  | env
+  | \.env
+  | _build
+  | buck-out
+  | build
+  | dist
+  | \.terraform
+)/
+'''
+
+# isort configuration
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 88
+known_first_party = ["scripts"]
+known_third_party = ["azure", "requests", "click", "yaml"]
+sections = ["FUTURE", "STDLIB", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]
+default_section = "THIRDPARTY"
+force_grid_wrap = 0
+use_parentheses = true
+ensure_newline_before_comments = true
+include_trailing_comma = true
+
+# MyPy configuration
+[tool.mypy]
+python_version = "3.7"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+ignore_missing_imports = true
+exclude = [
+    "venv/",
+    ".venv/",
+    "env/",
+    ".env/",
+    "build/",
+    "dist/",
+]
+
+# Pytest configuration
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "--verbose",
+    "--tb=short",
+    "--cov=scripts",
+    "--cov-report=term-missing",
+    "--cov-report=html:htmlcov",
+    "--cov-report=xml",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+    "azure: marks tests that require Azure credentials",
+]
+
+# Coverage configuration
+[tool.coverage.run]
+source = ["scripts"]
+omit = [
+    "*/venv/*",
+    "*/.venv/*",
+    "*/env/*",
+    "*/.env/*",
+    "*/tests/*",
+    "*/test_*",
+    "setup.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
+
+# Bandit security linting configuration
+[tool.bandit]
+exclude_dirs = ["tests", "venv", ".venv", "env", ".env"]
+skips = ["B101", "B601"]  # Skip assert_used and shell_injection_process_args
+
+# Pylint configuration
+[tool.pylint.messages_control]
+disable = [
+    "C0114",  # missing-module-docstring
+    "C0116",  # missing-function-docstring
+    "R0903",  # too-few-public-methods
+]
+
+[tool.pylint.format]
+max-line-length = 88
+
+# setuptools configuration
+[tool.setuptools]
+package-dir = {"" = "."}
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["scripts*"]
+exclude = ["tests*", "venv*", ".venv*", "env*", ".env*"]

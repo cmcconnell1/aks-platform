@@ -1,0 +1,68 @@
+# Environment Configuration for Development
+environment = "dev"
+location    = "East US"
+project_name = "aks-platform"
+
+# Networking Configuration
+vnet_address_space                    = ["10.0.0.0/16"]
+aks_subnet_address_prefix             = "10.0.1.0/24"
+app_gateway_subnet_address_prefix     = "10.0.2.0/24"
+private_endpoint_subnet_address_prefix = "10.0.3.0/24"
+
+# AKS Configuration
+kubernetes_version     = null # Use latest stable
+aks_node_count        = 2
+aks_node_vm_size      = "Standard_D2s_v3"
+aks_max_node_count    = 5
+aks_min_node_count    = 1
+enable_private_cluster = true
+enable_spot_instances  = false
+
+# AI/ML Node Pool
+enable_ai_node_pool = true
+ai_node_vm_size    = "Standard_NC6s_v3"
+ai_node_count      = 1
+
+# Security Configuration
+enable_private_endpoints = true
+authorized_ip_ranges     = [] # Add your IP ranges here
+
+# SSL Certificate Configuration
+create_demo_ssl_certificate = true
+ssl_certificate_subject    = "aks-platform-dev.local"
+ssl_certificate_dns_names  = [
+  "aks-platform-dev.local",
+  "*.aks-platform-dev.local"
+]
+
+# Let's Encrypt Configuration (disable demo cert when using Let's Encrypt)
+enable_cert_manager = false  # Set to true to enable Let's Encrypt
+letsencrypt_email = ""       # Required when enable_cert_manager = true
+enable_letsencrypt_staging = true   # Start with staging for testing
+enable_letsencrypt_prod = false     # Enable after testing with staging
+
+# Application Gateway
+enable_application_gateway = true
+
+# GitOps Configuration
+enable_argocd     = true
+argocd_namespace  = "argocd"
+
+# AI Tools Configuration
+enable_ai_tools    = true
+enable_jupyter_hub = true
+enable_mlflow      = true
+enable_kubeflow    = false # Resource intensive
+
+# Monitoring Configuration
+enable_monitoring = true
+enable_logging    = true
+
+# Tags
+tags = {
+  Environment = "dev"
+  Project     = "AKS-GitOps"
+  ManagedBy   = "Terraform"
+  Owner       = "DevOps-Team"
+  CostCenter  = "Engineering"
+}
