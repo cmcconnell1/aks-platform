@@ -240,3 +240,194 @@ variable "tags" {
     Environment = "dev"
   }
 }
+
+# =============================================================================
+# AKS Network Configuration
+# =============================================================================
+
+variable "aks_service_cidr" {
+  description = "CIDR for Kubernetes services"
+  type        = string
+  default     = "10.2.0.0/24"
+}
+
+variable "aks_dns_service_ip" {
+  description = "IP address for Kubernetes DNS service (must be within service_cidr)"
+  type        = string
+  default     = "10.2.0.10"
+}
+
+# =============================================================================
+# AKS Node Pool Configuration
+# =============================================================================
+
+variable "system_node_pool_os_disk_size_gb" {
+  description = "OS disk size in GB for system node pool"
+  type        = number
+  default     = 100
+}
+
+variable "user_node_pool_os_disk_size_gb" {
+  description = "OS disk size in GB for user node pool"
+  type        = number
+  default     = 100
+}
+
+variable "ai_node_pool_os_disk_size_gb" {
+  description = "OS disk size in GB for AI/ML node pool"
+  type        = number
+  default     = 200
+}
+
+variable "system_node_pool_max_surge" {
+  description = "Max surge setting for system node pool upgrades (e.g., '10%' or '1')"
+  type        = string
+  default     = "10%"
+}
+
+variable "user_node_pool_max_surge" {
+  description = "Max surge setting for user node pool upgrades (e.g., '33%' or '1')"
+  type        = string
+  default     = "33%"
+}
+
+variable "ai_node_pool_max_surge" {
+  description = "Max surge setting for AI/ML node pool upgrades (e.g., '33%' or '1')"
+  type        = string
+  default     = "33%"
+}
+
+# =============================================================================
+# AKS Autoscaler Profile
+# =============================================================================
+
+variable "aks_autoscaler_profile" {
+  description = "Autoscaler profile configuration for AKS cluster"
+  type = object({
+    balance_similar_node_groups      = optional(bool, false)
+    expander                         = optional(string, "random")
+    max_graceful_termination_sec     = optional(string, "600")
+    max_node_provisioning_time       = optional(string, "15m")
+    max_unready_nodes                = optional(number, 3)
+    max_unready_percentage           = optional(number, 45)
+    new_pod_scale_up_delay           = optional(string, "10s")
+    scale_down_delay_after_add       = optional(string, "10m")
+    scale_down_delay_after_delete    = optional(string, "10s")
+    scale_down_delay_after_failure   = optional(string, "3m")
+    scan_interval                    = optional(string, "10s")
+    scale_down_unneeded              = optional(string, "10m")
+    scale_down_unready               = optional(string, "20m")
+    scale_down_utilization_threshold = optional(string, "0.5")
+  })
+  default = {}
+}
+
+# =============================================================================
+# Storage Configuration
+# =============================================================================
+
+variable "default_storage_class" {
+  description = "Default Kubernetes storage class for persistent volumes"
+  type        = string
+  default     = "managed-csi"
+}
+
+# =============================================================================
+# Helm Chart Versions
+# =============================================================================
+
+variable "helm_chart_versions" {
+  description = "Versions for Helm charts used in the platform"
+  type = object({
+    cert_manager     = optional(string, "v1.13.2")
+    argocd           = optional(string, "5.51.6")
+    prometheus_stack = optional(string, "55.5.0")
+    loki             = optional(string, "2.9.11")
+    promtail         = optional(string, "6.15.3")
+    jaeger           = optional(string, "0.71.11")
+    jupyterhub       = optional(string, "3.1.0")
+    mlflow           = optional(string, "0.7.19")
+  })
+  default = {}
+}
+
+# =============================================================================
+# Monitoring Configuration
+# =============================================================================
+
+variable "prometheus_storage_size" {
+  description = "Storage size for Prometheus"
+  type        = string
+  default     = "50Gi"
+}
+
+variable "prometheus_retention" {
+  description = "Data retention period for Prometheus"
+  type        = string
+  default     = "30d"
+}
+
+variable "grafana_storage_size" {
+  description = "Storage size for Grafana"
+  type        = string
+  default     = "10Gi"
+}
+
+variable "alertmanager_storage_size" {
+  description = "Storage size for Alertmanager"
+  type        = string
+  default     = "10Gi"
+}
+
+variable "loki_storage_size" {
+  description = "Storage size for Loki log aggregation"
+  type        = string
+  default     = "50Gi"
+}
+
+# =============================================================================
+# Sensitive Credentials (NO DEFAULTS - must be provided)
+# =============================================================================
+
+variable "grafana_admin_password" {
+  description = "Admin password for Grafana (required, no default for security)"
+  type        = string
+  sensitive   = true
+  default     = null
+}
+
+variable "mlflow_db_password" {
+  description = "Database password for MLflow (required, no default for security)"
+  type        = string
+  sensitive   = true
+  default     = null
+}
+
+variable "mlflow_minio_password" {
+  description = "MinIO password for MLflow artifacts (required, no default for security)"
+  type        = string
+  sensitive   = true
+  default     = null
+}
+
+# =============================================================================
+# Application Gateway Configuration
+# =============================================================================
+
+variable "app_gateway_sku_tier" {
+  description = "SKU tier for Application Gateway"
+  type        = string
+  default     = "WAF_v2"
+}
+
+variable "app_gateway_sku_capacity" {
+  description = "SKU capacity for Application Gateway"
+  type        = number
+  default     = 2
+}
+
+variable "app_gateway_zones" {
+  description = "Availability zones for Application Gateway"
+  type        = list(string)
+  default     = ["1", "2", "3"]
+}

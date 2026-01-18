@@ -32,6 +32,59 @@ The platform implements a **defense-in-depth** security strategy across multiple
 - Separate principals for different environments
 - Audit logging for all operations
 
+#### **GitHub Actions OIDC Authentication (Recommended)**
+
+The platform uses **OpenID Connect (OIDC) workload identity federation** for GitHub Actions authentication with Azure. This is the recommended approach as it eliminates the need for stored secrets.
+
+**How OIDC Works:**
+```
+GitHub Actions --> [ID Token Request] --> GitHub OIDC Provider
+                                                |
+                                                v
+                                         Short-lived Token
+                                                |
+                                                v
+                          Azure AD validates token and issues access token
+                                                |
+                                                v
+                                         Azure Resources
+```
+
+**Benefits of OIDC:**
+
+| Feature | Traditional Secrets | OIDC Federation |
+|---------|--------------------| ----------------|
+| Secret Storage | Long-lived client secrets | No secrets stored |
+| Token Lifetime | 1-2 years | ~10 minutes |
+| Rotation | Manual (quarterly) | Automatic (every workflow run) |
+| Scope | Broad access | Specific repo/branch/environment |
+| Attack Surface | Secrets can be leaked | No secrets to leak |
+
+**Setup OIDC Federation:**
+```bash
+# Run the automated setup script
+./scripts/setup-azure-oidc.sh
+
+# Or for specific environment
+./scripts/setup-azure-oidc.sh --environment prod
+```
+
+**GitHub Workflow Configuration:**
+```yaml
+permissions:
+  id-token: write    # Required for OIDC token request
+  contents: read
+
+steps:
+  - uses: azure/login@v2
+    with:
+      client-id: ${{ secrets.AZURE_CLIENT_ID }}
+      tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+      subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+```
+
+For complete setup instructions, see [Azure GitHub OIDC Setup Guide](./azure-github-oidc-setup.md).
+
 #### **RBAC Configuration**
 ```yaml
 # Kubernetes RBAC example
@@ -174,6 +227,72 @@ resource "azurerm_storage_account" "terraform_state" {
 
 ### **Secret Management**
 
+#### **Terraform Credential Management**
+
+The platform requires certain sensitive credentials that have **no defaults** for security:
+
+| Credential | Purpose | Module |
+|------------|---------|--------|
+| `grafana_admin_password` | Grafana web UI admin access | Monitoring |
+| `mlflow_db_password` | MLflow PostgreSQL database | AI Tools |
+| `mlflow_minio_password` | MLflow artifact storage | AI Tools |
+
+**Providing Credentials via Environment Variables (Recommended)**:
+
+```bash
+# Set credentials before running Terraform
+export TF_VAR_grafana_admin_password="$(openssl rand -base64 24)"
+export TF_VAR_mlflow_db_password="$(openssl rand -base64 24)"
+export TF_VAR_mlflow_minio_password="$(openssl rand -base64 24)"
+
+# Apply with environment-specific configuration
+terraform apply -var-file=environments/prod/terraform.tfvars
+```
+
+**GitHub Actions Secret Configuration**:
+
+```yaml
+# .github/workflows/terraform-deploy.yml
+env:
+  TF_VAR_grafana_admin_password: ${{ secrets.GRAFANA_ADMIN_PASSWORD }}
+  TF_VAR_mlflow_db_password: ${{ secrets.MLFLOW_DB_PASSWORD }}
+  TF_VAR_mlflow_minio_password: ${{ secrets.MLFLOW_MINIO_PASSWORD }}
+```
+
+**Retrieving from Azure Key Vault**:
+
+```bash
+# Store secrets in Key Vault
+az keyvault secret set --vault-name "kv-aks-platform-prod" \
+  --name "grafana-admin-password" --value "$(openssl rand -base64 24)"
+
+# Retrieve for Terraform
+export TF_VAR_grafana_admin_password=$(az keyvault secret show \
+  --vault-name "kv-aks-platform-prod" \
+  --name "grafana-admin-password" \
+  --query value -o tsv)
+```
+
+**Password Requirements**:
+- Minimum 16 characters for production
+- Mix of uppercase, lowercase, numbers, and special characters
+- Unique per environment (never share between dev/staging/prod)
+- Rotate quarterly at minimum
+
+**Files That Should NEVER Be Committed**:
+- `**/secrets.tfvars` - Local secrets file
+- `.env` files with credentials
+- Any file containing `password`, `secret`, or `key` values
+
+Add to `.gitignore`:
+```
+**/secrets.tfvars
+.env
+.env.*
+*.pem
+*.key
+```
+
 #### **Azure Key Vault Integration**
 ```yaml
 # CSI Secret Store driver configuration
@@ -203,6 +322,16 @@ spec:
 az ad sp credential reset --id $SP_ID --years 1
 kubectl create secret generic sp-secret --from-literal=client-secret=$NEW_SECRET
 ```
+
+#### **Credential Rotation Schedule**
+
+| Credential Type | Rotation Frequency | Method |
+|----------------|-------------------|--------|
+| Service Principal Secrets | Quarterly | `az ad sp credential reset` |
+| Grafana Admin Password | Quarterly | Update via Terraform |
+| Database Passwords | Quarterly | Update via Terraform + restart pods |
+| SSL Certificates | Auto (Let's Encrypt) | cert-manager handles renewal |
+| AKS Cluster Credentials | Auto (Azure) | Managed by Azure |
 
 ## Application Security
 

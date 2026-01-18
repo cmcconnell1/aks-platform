@@ -34,14 +34,14 @@ resource "helm_release" "jupyterhub" {
       hub = {
         config = {
           JupyterHub = {
-            admin_access = true
+            admin_access        = true
             authenticator_class = "dummy"
           }
           DummyAuthenticator = {
             password = var.jupyter_admin_password != null ? var.jupyter_admin_password : random_password.jupyter_admin_password.result
           }
         }
-        
+
         resources = {
           limits = {
             cpu    = "500m"
@@ -52,26 +52,26 @@ resource "helm_release" "jupyterhub" {
             memory = "512Mi"
           }
         }
-        
+
         service = {
           type = "ClusterIP"
         }
-        
+
         ingress = {
-          enabled = var.enable_jupyter_ingress
+          enabled     = var.enable_jupyter_ingress
           annotations = var.jupyter_ingress_annotations
-          hosts = var.jupyter_ingress_hosts
-          tls = var.jupyter_ingress_tls
+          hosts       = var.jupyter_ingress_hosts
+          tls         = var.jupyter_ingress_tls
         }
       }
 
       proxy = {
         secretToken = var.jupyter_proxy_secret_token != null ? var.jupyter_proxy_secret_token : random_password.jupyter_proxy_secret_token.result
-        
+
         service = {
           type = "ClusterIP"
         }
-        
+
         resources = {
           limits = {
             cpu    = "200m"
@@ -89,38 +89,38 @@ resource "helm_release" "jupyterhub" {
           name = var.jupyter_notebook_image
           tag  = var.jupyter_notebook_tag
         }
-        
+
         defaultUrl = "/lab"
-        
+
         cpu = {
           limit     = var.jupyter_user_cpu_limit
           guarantee = var.jupyter_user_cpu_guarantee
         }
-        
+
         memory = {
           limit     = var.jupyter_user_memory_limit
           guarantee = var.jupyter_user_memory_guarantee
         }
-        
+
         storage = {
           dynamic = {
             storageClass = "managed-csi"
           }
           capacity = var.jupyter_user_storage_capacity
         }
-        
+
         # GPU support for AI/ML workloads
         extraResource = var.enable_gpu_support ? {
           limits = {
             "nvidia.com/gpu" = var.jupyter_gpu_limit
           }
         } : {}
-        
+
         # Node selector for AI node pool
         nodeSelector = var.enable_gpu_support ? {
           "node-type" = "ai"
         } : {}
-        
+
         # Tolerations for AI node pool
         extraTolerations = var.enable_gpu_support ? [
           {
@@ -159,19 +159,19 @@ resource "helm_release" "mlflow" {
         repository = "python"
         tag        = "3.9-slim"
       }
-      
+
       service = {
         type = "ClusterIP"
         port = 5000
       }
-      
+
       ingress = {
-        enabled = var.enable_mlflow_ingress
+        enabled     = var.enable_mlflow_ingress
         annotations = var.mlflow_ingress_annotations
-        hosts = var.mlflow_ingress_hosts
-        tls = var.mlflow_ingress_tls
+        hosts       = var.mlflow_ingress_hosts
+        tls         = var.mlflow_ingress_tls
       }
-      
+
       resources = {
         limits = {
           cpu    = "1000m"
@@ -182,40 +182,40 @@ resource "helm_release" "mlflow" {
           memory = "1Gi"
         }
       }
-      
+
       persistence = {
-        enabled = true
+        enabled      = true
         storageClass = "managed-csi"
-        size = var.mlflow_storage_size
+        size         = var.mlflow_storage_size
       }
-      
+
       # PostgreSQL backend for MLflow
       postgresql = {
         enabled = true
         auth = {
           postgresPassword = var.mlflow_db_password
-          database = "mlflow"
+          database         = "mlflow"
         }
         primary = {
           persistence = {
-            enabled = true
+            enabled      = true
             storageClass = "managed-csi"
-            size = "20Gi"
+            size         = "20Gi"
           }
         }
       }
-      
+
       # MinIO for artifact storage
       minio = {
         enabled = true
         auth = {
-          rootUser = "admin"
+          rootUser     = "admin"
           rootPassword = var.mlflow_minio_password
         }
         persistence = {
-          enabled = true
+          enabled      = true
           storageClass = "managed-csi"
-          size = var.mlflow_artifact_storage_size
+          size         = var.mlflow_artifact_storage_size
         }
       }
     })
@@ -228,11 +228,11 @@ resource "helm_release" "mlflow" {
 resource "helm_release" "gpu_operator" {
   count = var.enable_gpu_support ? 1 : 0
 
-  name       = "gpu-operator"
-  repository = "https://nvidia.github.io/gpu-operator"
-  chart      = "gpu-operator"
-  version    = "v23.9.1"
-  namespace  = "gpu-operator"
+  name             = "gpu-operator"
+  repository       = "https://nvidia.github.io/gpu-operator"
+  chart            = "gpu-operator"
+  version          = "v23.9.1"
+  namespace        = "gpu-operator"
   create_namespace = true
 
   values = [
@@ -346,13 +346,13 @@ resource "helm_release" "gpu_operator" {
 resource "helm_release" "kubeflow" {
   count = var.enable_kubeflow ? 1 : 0
 
-  name       = "kubeflow"
-  repository = "https://kubeflow.github.io/manifests"
-  chart      = "kubeflow"
-  version    = "1.7.0"
-  namespace  = "kubeflow"
+  name             = "kubeflow"
+  repository       = "https://kubeflow.github.io/manifests"
+  chart            = "kubeflow"
+  version          = "1.7.0"
+  namespace        = "kubeflow"
   create_namespace = true
-  timeout    = 1200 # 20 minutes
+  timeout          = 1200 # 20 minutes
 
   values = [
     yamlencode({

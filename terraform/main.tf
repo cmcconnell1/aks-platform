@@ -2,7 +2,7 @@
 locals {
   resource_group_name = var.resource_group_name != null ? var.resource_group_name : "${var.project_name}-${var.environment}-rg"
   cluster_name        = "${var.project_name}-${var.environment}-aks"
-  
+
   # Merge environment-specific tags with provided tags
   common_tags = merge(var.tags, {
     Environment = var.environment
@@ -21,41 +21,41 @@ resource "azurerm_resource_group" "main" {
 # Networking Module
 module "networking" {
   source = "./modules/networking"
-  
+
   resource_group_name                    = azurerm_resource_group.main.name
-  location                              = azurerm_resource_group.main.location
-  environment                           = var.environment
-  project_name                          = var.project_name
-  vnet_address_space                    = var.vnet_address_space
-  aks_subnet_address_prefix             = var.aks_subnet_address_prefix
-  app_gateway_subnet_address_prefix     = var.app_gateway_subnet_address_prefix
+  location                               = azurerm_resource_group.main.location
+  environment                            = var.environment
+  project_name                           = var.project_name
+  vnet_address_space                     = var.vnet_address_space
+  aks_subnet_address_prefix              = var.aks_subnet_address_prefix
+  app_gateway_subnet_address_prefix      = var.app_gateway_subnet_address_prefix
   private_endpoint_subnet_address_prefix = var.private_endpoint_subnet_address_prefix
-  tags                                  = local.common_tags
+  tags                                   = local.common_tags
 }
 
 # Security Module (Key Vault, Managed Identity)
 module "security" {
   source = "./modules/security"
 
-  resource_group_name           = azurerm_resource_group.main.name
-  location                     = azurerm_resource_group.main.location
-  environment                  = var.environment
-  project_name                 = var.project_name
-  tenant_id                    = data.azurerm_client_config.current.tenant_id
-  object_id                    = data.azurerm_client_config.current.object_id
+  resource_group_name = azurerm_resource_group.main.name
+  location            = azurerm_resource_group.main.location
+  environment         = var.environment
+  project_name        = var.project_name
+  tenant_id           = data.azurerm_client_config.current.tenant_id
+  object_id           = data.azurerm_client_config.current.object_id
 
   # Private endpoint configuration
-  enable_private_endpoint      = var.enable_private_endpoints
-  private_endpoint_subnet_id   = module.networking.private_endpoints_subnet_id
-  virtual_network_id           = module.networking.vnet_id
+  enable_private_endpoint    = var.enable_private_endpoints
+  private_endpoint_subnet_id = module.networking.private_endpoints_subnet_id
+  virtual_network_id         = module.networking.vnet_id
 
   # SSL certificate configuration
-  create_demo_ssl_certificate  = var.create_demo_ssl_certificate
-  ssl_certificate_subject      = var.ssl_certificate_subject
-  ssl_certificate_dns_names    = var.ssl_certificate_dns_names
+  create_demo_ssl_certificate = var.create_demo_ssl_certificate
+  ssl_certificate_subject     = var.ssl_certificate_subject
+  ssl_certificate_dns_names   = var.ssl_certificate_dns_names
 
   # cert-manager configuration
-  enable_cert_manager          = var.enable_cert_manager
+  enable_cert_manager = var.enable_cert_manager
 
   tags = local.common_tags
 
@@ -66,18 +66,18 @@ module "security" {
 module "container_registry" {
   source = "./modules/container_registry"
 
-  resource_group_name            = azurerm_resource_group.main.name
-  location                      = azurerm_resource_group.main.location
-  environment                   = var.environment
-  project_name                  = var.project_name
+  resource_group_name = azurerm_resource_group.main.name
+  location            = azurerm_resource_group.main.location
+  environment         = var.environment
+  project_name        = var.project_name
 
   # Private endpoint configuration
-  enable_private_endpoint       = var.enable_private_endpoints
-  private_endpoint_subnet_id    = module.networking.private_endpoints_subnet_id
-  virtual_network_id            = module.networking.vnet_id
+  enable_private_endpoint    = var.enable_private_endpoints
+  private_endpoint_subnet_id = module.networking.private_endpoints_subnet_id
+  virtual_network_id         = module.networking.vnet_id
 
   # Monitoring
-  log_analytics_workspace_id    = module.security.log_analytics_workspace_id
+  log_analytics_workspace_id = module.security.log_analytics_workspace_id
 
   tags = local.common_tags
 
@@ -87,44 +87,59 @@ module "container_registry" {
 # AKS Cluster
 module "aks" {
   source = "./modules/aks"
-  
-  resource_group_name     = azurerm_resource_group.main.name
-  location               = azurerm_resource_group.main.location
-  cluster_name           = local.cluster_name
-  environment            = var.environment
-  project_name           = var.project_name
-  kubernetes_version     = var.kubernetes_version
-  
+
+  resource_group_name = azurerm_resource_group.main.name
+  location            = azurerm_resource_group.main.location
+  cluster_name        = local.cluster_name
+  environment         = var.environment
+  project_name        = var.project_name
+  kubernetes_version  = var.kubernetes_version
+
   # Networking
   vnet_subnet_id         = module.networking.aks_subnet_id
   enable_private_cluster = var.enable_private_cluster
   authorized_ip_ranges   = var.authorized_ip_ranges
-  
+  service_cidr           = var.aks_service_cidr
+  dns_service_ip         = var.aks_dns_service_ip
+
   # Node pools
-  node_count             = var.aks_node_count
+  node_count            = var.aks_node_count
   node_vm_size          = var.aks_node_vm_size
   max_node_count        = var.aks_max_node_count
   min_node_count        = var.aks_min_node_count
   enable_spot_instances = var.enable_spot_instances
-  
+
+  # Node pool disk sizes
+  system_os_disk_size_gb = var.system_node_pool_os_disk_size_gb
+  user_os_disk_size_gb   = var.user_node_pool_os_disk_size_gb
+  ai_os_disk_size_gb     = var.ai_node_pool_os_disk_size_gb
+
+  # Node pool upgrade settings
+  system_max_surge = var.system_node_pool_max_surge
+  user_max_surge   = var.user_node_pool_max_surge
+  ai_max_surge     = var.ai_node_pool_max_surge
+
+  # Autoscaler profile
+  autoscaler_profile = var.aks_autoscaler_profile
+
   # AI/ML node pool
-  enable_ai_node_pool   = var.enable_ai_node_pool
-  ai_node_vm_size      = var.ai_node_vm_size
-  ai_node_count        = var.ai_node_count
-  
+  enable_ai_node_pool = var.enable_ai_node_pool
+  ai_node_vm_size     = var.ai_node_vm_size
+  ai_node_count       = var.ai_node_count
+
   # Security
-  key_vault_id                         = module.security.key_vault_id
-  user_assigned_identity_id            = module.security.user_assigned_identity_id
-  user_assigned_identity_principal_id  = module.security.user_assigned_identity_principal_id
+  key_vault_id                        = module.security.key_vault_id
+  user_assigned_identity_id           = module.security.user_assigned_identity_id
+  user_assigned_identity_principal_id = module.security.user_assigned_identity_principal_id
 
   # Container Registry
   container_registry_id = module.container_registry.registry_id
 
   # Monitoring
   log_analytics_workspace_id = module.security.log_analytics_workspace_id
-  
+
   tags = local.common_tags
-  
+
   depends_on = [
     module.networking,
     module.security,
@@ -138,19 +153,19 @@ module "application_gateway" {
   count  = var.enable_application_gateway ? 1 : 0
 
   resource_group_name = azurerm_resource_group.main.name
-  location           = azurerm_resource_group.main.location
-  environment        = var.environment
-  project_name       = var.project_name
+  location            = azurerm_resource_group.main.location
+  environment         = var.environment
+  project_name        = var.project_name
 
   # Networking
-  subnet_id          = module.networking.app_gateway_subnet_id
+  subnet_id = module.networking.app_gateway_subnet_id
 
   # Security
-  key_vault_id       = module.security.key_vault_id
+  key_vault_id = module.security.key_vault_id
 
   # AKS integration
-  aks_cluster_id     = module.aks.cluster_id
-  subscription_id    = data.azurerm_client_config.current.subscription_id
+  aks_cluster_id  = module.aks.cluster_id
+  subscription_id = data.azurerm_client_config.current.subscription_id
 
   # SSL certificate (if demo certificate is created)
   ssl_certificate_name                = var.create_demo_ssl_certificate ? module.security.ssl_certificate_name : null
@@ -167,14 +182,14 @@ module "cert_manager" {
   count  = var.enable_cert_manager ? 1 : 0
 
   cert_manager_identity_client_id = module.security.cert_manager_identity_client_id
-  letsencrypt_email              = var.letsencrypt_email
-  enable_letsencrypt_staging     = var.enable_letsencrypt_staging
-  enable_letsencrypt_prod        = var.enable_letsencrypt_prod
+  letsencrypt_email               = var.letsencrypt_email
+  enable_letsencrypt_staging      = var.enable_letsencrypt_staging
+  enable_letsencrypt_prod         = var.enable_letsencrypt_prod
 
   # DNS01 solver configuration (for wildcard certificates)
-  enable_dns01_solver     = false  # Set to true if you have Azure DNS
-  subscription_id         = data.azurerm_client_config.current.subscription_id
-  tenant_id              = data.azurerm_client_config.current.tenant_id
+  enable_dns01_solver = false # Set to true if you have Azure DNS
+  subscription_id     = data.azurerm_client_config.current.subscription_id
+  tenant_id           = data.azurerm_client_config.current.tenant_id
 
   depends_on = [module.aks, module.security]
 }
@@ -184,9 +199,21 @@ module "monitoring" {
   source = "./modules/monitoring"
   count  = var.enable_monitoring ? 1 : 0
 
-  # Grafana ingress configuration
+  # Grafana configuration
+  grafana_admin_password = var.grafana_admin_password
   enable_grafana_ingress = var.enable_application_gateway
   grafana_ingress_hosts  = ["grafana.${var.ssl_certificate_subject}"]
+  grafana_storage_size   = var.grafana_storage_size
+
+  # Prometheus configuration
+  prometheus_storage_size = var.prometheus_storage_size
+  prometheus_retention    = var.prometheus_retention
+
+  # Alertmanager configuration
+  alertmanager_storage_size = var.alertmanager_storage_size
+
+  # Loki configuration
+  loki_storage_size = var.loki_storage_size
 
   depends_on = [module.aks, module.application_gateway]
 }
@@ -214,6 +241,10 @@ module "ai_tools" {
   enable_mlflow      = var.enable_mlflow
   enable_kubeflow    = var.enable_kubeflow
   enable_gpu_support = var.enable_ai_node_pool
+
+  # MLflow credentials (required when enable_mlflow = true)
+  mlflow_db_password    = var.mlflow_db_password
+  mlflow_minio_password = var.mlflow_minio_password
 
   # Ingress configuration
   jupyter_ingress_hosts = ["jupyter.${var.ssl_certificate_subject}"]

@@ -35,13 +35,13 @@ resource "azurerm_key_vault" "main" {
 
   # Network access
   public_network_access_enabled = var.enable_public_network_access
-  
+
   dynamic "network_acls" {
     for_each = var.enable_public_network_access ? [] : [1]
     content {
-      default_action = "Deny"
-      bypass         = "AzureServices"
-      ip_rules       = var.allowed_ip_ranges
+      default_action             = "Deny"
+      bypass                     = "AzureServices"
+      ip_rules                   = var.allowed_ip_ranges
       virtual_network_subnet_ids = var.allowed_subnet_ids
     }
   }

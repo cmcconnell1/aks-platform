@@ -78,9 +78,9 @@ variable "ingress_annotations" {
   description = "Annotations for ArgoCD ingress"
   type        = map(string)
   default = {
-    "kubernetes.io/ingress.class"                    = "azure/application-gateway"
-    "appgw.ingress.kubernetes.io/ssl-redirect"       = "true"
-    "appgw.ingress.kubernetes.io/backend-protocol"   = "http"
+    "kubernetes.io/ingress.class"                  = "azure/application-gateway"
+    "appgw.ingress.kubernetes.io/ssl-redirect"     = "true"
+    "appgw.ingress.kubernetes.io/backend-protocol" = "http"
   }
 }
 
@@ -92,7 +92,7 @@ variable "ingress_hosts" {
 
 variable "ingress_tls" {
   description = "TLS configuration for ArgoCD ingress"
-  type        = list(object({
+  type = list(object({
     secretName = string
     hosts      = list(string)
   }))

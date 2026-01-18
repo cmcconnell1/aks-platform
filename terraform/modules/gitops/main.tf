@@ -38,16 +38,16 @@ resource "helm_release" "argocd" {
         params = {
           "server.insecure" = var.enable_insecure_mode
         }
-        
+
         cm = {
           "url" = var.argocd_domain != null ? "https://${var.argocd_domain}" : "https://argocd.${var.cluster_name}.local"
-          
+
           # Enable OIDC authentication if configured
           "oidc.config" = var.enable_oidc ? yamlencode({
-            name         = "Azure AD"
-            issuer       = "https://login.microsoftonline.com/${var.tenant_id}/v2.0"
-            clientId     = var.oidc_client_id
-            clientSecret = var.oidc_client_secret
+            name            = "Azure AD"
+            issuer          = "https://login.microsoftonline.com/${var.tenant_id}/v2.0"
+            clientId        = var.oidc_client_id
+            clientSecret    = var.oidc_client_secret
             requestedScopes = ["openid", "profile", "email", "groups"]
             requestedIDTokenClaims = {
               groups = {
@@ -55,32 +55,32 @@ resource "helm_release" "argocd" {
               }
             }
           }) : ""
-          
+
           # Repository configuration
           "repositories" = var.git_repositories != null ? yamlencode(var.git_repositories) : ""
         }
-        
+
         rbac = {
           "policy.default" = "role:readonly"
-          "policy.csv" = var.rbac_policy
+          "policy.csv"     = var.rbac_policy
         }
       }
 
       server = {
         replicas = var.server_replicas
-        
+
         service = {
-          type = var.service_type
+          type        = var.service_type
           annotations = var.service_annotations
         }
-        
+
         ingress = {
-          enabled = var.enable_ingress
+          enabled     = var.enable_ingress
           annotations = var.ingress_annotations
-          hosts = var.ingress_hosts
-          tls = var.ingress_tls
+          hosts       = var.ingress_hosts
+          tls         = var.ingress_tls
         }
-        
+
         # Resource limits
         resources = {
           limits = {
@@ -92,7 +92,7 @@ resource "helm_release" "argocd" {
             memory = "256Mi"
           }
         }
-        
+
         # High availability configuration
         affinity = {
           podAntiAffinity = {
@@ -115,7 +115,7 @@ resource "helm_release" "argocd" {
 
       controller = {
         replicas = var.controller_replicas
-        
+
         # Resource limits
         resources = {
           limits = {
@@ -131,7 +131,7 @@ resource "helm_release" "argocd" {
 
       repoServer = {
         replicas = var.repo_server_replicas
-        
+
         # Resource limits
         resources = {
           limits = {
@@ -147,7 +147,7 @@ resource "helm_release" "argocd" {
 
       applicationSet = {
         enabled = var.enable_application_set
-        
+
         # Resource limits
         resources = {
           limits = {
@@ -168,7 +168,7 @@ resource "helm_release" "argocd" {
       # Redis for caching
       redis = {
         enabled = true
-        
+
         # Resource limits
         resources = {
           limits = {
@@ -190,7 +190,7 @@ resource "helm_release" "argocd" {
 # ArgoCD CLI configuration secret
 resource "kubernetes_secret" "argocd_cli_config" {
   count = var.create_cli_config ? 1 : 0
-  
+
   metadata {
     name      = "argocd-cli-config"
     namespace = kubernetes_namespace.argocd.metadata[0].name
@@ -211,13 +211,13 @@ resource "kubernetes_secret" "argocd_cli_config" {
 # Initial ArgoCD application for app-of-apps pattern
 resource "kubernetes_manifest" "app_of_apps" {
   count = var.enable_app_of_apps ? 1 : 0
-  
+
   manifest = {
     apiVersion = "argoproj.io/v1alpha1"
     kind       = "Application"
     metadata = {
-      name      = "app-of-apps"
-      namespace = kubernetes_namespace.argocd.metadata[0].name
+      name       = "app-of-apps"
+      namespace  = kubernetes_namespace.argocd.metadata[0].name
       finalizers = ["resources-finalizer.argocd.argoproj.io"]
     }
     spec = {

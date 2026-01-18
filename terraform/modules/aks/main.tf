@@ -7,9 +7,9 @@ resource "azurerm_kubernetes_cluster" "main" {
   kubernetes_version  = var.kubernetes_version
 
   # Private cluster configuration
-  private_cluster_enabled             = var.enable_private_cluster
-  private_dns_zone_id                = var.enable_private_cluster ? "System" : null
-  api_server_authorized_ip_ranges     = var.enable_private_cluster ? null : var.authorized_ip_ranges
+  private_cluster_enabled         = var.enable_private_cluster
+  private_dns_zone_id             = var.enable_private_cluster ? "System" : null
+  api_server_authorized_ip_ranges = var.enable_private_cluster ? null : var.authorized_ip_ranges
 
   # Default node pool
   default_node_pool {
@@ -18,11 +18,11 @@ resource "azurerm_kubernetes_cluster" "main" {
     vm_size             = var.node_vm_size
     vnet_subnet_id      = var.vnet_subnet_id
     enable_auto_scaling = true
-    min_count          = var.min_node_count
-    max_count          = var.max_node_count
-    os_disk_size_gb    = 100
-    os_disk_type       = "Managed"
-    type               = "VirtualMachineScaleSets"
+    min_count           = var.min_node_count
+    max_count           = var.max_node_count
+    os_disk_size_gb     = var.system_os_disk_size_gb
+    os_disk_type        = "Managed"
+    type                = "VirtualMachineScaleSets"
 
     # Note: Default node pool must use Regular priority for system workloads
     # Spot instances are configured in additional node pools only
@@ -38,7 +38,7 @@ resource "azurerm_kubernetes_cluster" "main" {
     ]
 
     upgrade_settings {
-      max_surge = "10%"
+      max_surge = var.system_max_surge
     }
   }
 
@@ -52,8 +52,8 @@ resource "azurerm_kubernetes_cluster" "main" {
   network_profile {
     network_plugin    = "azure"
     network_policy    = "azure"
-    dns_service_ip    = "10.2.0.10"
-    service_cidr      = "10.2.0.0/24"
+    dns_service_ip    = var.dns_service_ip
+    service_cidr      = var.service_cidr
     load_balancer_sku = "standard"
   }
 
@@ -77,20 +77,20 @@ resource "azurerm_kubernetes_cluster" "main" {
 
   # Auto-scaler profile
   auto_scaler_profile {
-    balance_similar_node_groups      = false
-    expander                        = "random"
-    max_graceful_termination_sec    = "600"
-    max_node_provisioning_time      = "15m"
-    max_unready_nodes              = 3
-    max_unready_percentage         = 45
-    new_pod_scale_up_delay         = "10s"
-    scale_down_delay_after_add     = "10m"
-    scale_down_delay_after_delete  = "10s"
-    scale_down_delay_after_failure = "3m"
-    scan_interval                  = "10s"
-    scale_down_unneeded           = "10m"
-    scale_down_unready            = "20m"
-    scale_down_utilization_threshold = "0.5"
+    balance_similar_node_groups      = var.autoscaler_profile.balance_similar_node_groups
+    expander                         = var.autoscaler_profile.expander
+    max_graceful_termination_sec     = var.autoscaler_profile.max_graceful_termination_sec
+    max_node_provisioning_time       = var.autoscaler_profile.max_node_provisioning_time
+    max_unready_nodes                = var.autoscaler_profile.max_unready_nodes
+    max_unready_percentage           = var.autoscaler_profile.max_unready_percentage
+    new_pod_scale_up_delay           = var.autoscaler_profile.new_pod_scale_up_delay
+    scale_down_delay_after_add       = var.autoscaler_profile.scale_down_delay_after_add
+    scale_down_delay_after_delete    = var.autoscaler_profile.scale_down_delay_after_delete
+    scale_down_delay_after_failure   = var.autoscaler_profile.scale_down_delay_after_failure
+    scan_interval                    = var.autoscaler_profile.scan_interval
+    scale_down_unneeded              = var.autoscaler_profile.scale_down_unneeded
+    scale_down_unready               = var.autoscaler_profile.scale_down_unready
+    scale_down_utilization_threshold = var.autoscaler_profile.scale_down_utilization_threshold
   }
 
   tags = var.tags
@@ -104,15 +104,15 @@ resource "azurerm_kubernetes_cluster" "main" {
 resource "azurerm_kubernetes_cluster_node_pool" "user" {
   name                  = "user"
   kubernetes_cluster_id = azurerm_kubernetes_cluster.main.id
-  vm_size              = var.node_vm_size
-  node_count           = var.node_count
-  vnet_subnet_id       = var.vnet_subnet_id
-  enable_auto_scaling  = true
-  min_count           = var.min_node_count
-  max_count           = var.max_node_count
-  os_disk_size_gb     = 100
-  os_disk_type        = "Managed"
-  
+  vm_size               = var.node_vm_size
+  node_count            = var.node_count
+  vnet_subnet_id        = var.vnet_subnet_id
+  enable_auto_scaling   = true
+  min_count             = var.min_node_count
+  max_count             = var.max_node_count
+  os_disk_size_gb       = var.user_os_disk_size_gb
+  os_disk_type          = "Managed"
+
   # Use spot instances if enabled
   priority        = var.enable_spot_instances ? "Spot" : "Regular"
   eviction_policy = var.enable_spot_instances ? "Delete" : null
@@ -123,7 +123,7 @@ resource "azurerm_kubernetes_cluster_node_pool" "user" {
   }
 
   upgrade_settings {
-    max_surge = "33%"
+    max_surge = var.user_max_surge
   }
 
   tags = var.tags
@@ -135,14 +135,14 @@ resource "azurerm_kubernetes_cluster_node_pool" "ai" {
 
   name                  = "ai"
   kubernetes_cluster_id = azurerm_kubernetes_cluster.main.id
-  vm_size              = var.ai_node_vm_size
-  node_count           = var.ai_node_count
-  vnet_subnet_id       = var.vnet_subnet_id
-  enable_auto_scaling  = true
-  min_count           = 0
-  max_count           = var.ai_node_count * 2
-  os_disk_size_gb     = 200
-  os_disk_type        = "Managed"
+  vm_size               = var.ai_node_vm_size
+  node_count            = var.ai_node_count
+  vnet_subnet_id        = var.vnet_subnet_id
+  enable_auto_scaling   = true
+  min_count             = 0
+  max_count             = var.ai_node_count * 2
+  os_disk_size_gb       = var.ai_os_disk_size_gb
+  os_disk_type          = "Managed"
 
   node_labels = {
     "node-type"     = "ai"
@@ -155,7 +155,7 @@ resource "azurerm_kubernetes_cluster_node_pool" "ai" {
   ]
 
   upgrade_settings {
-    max_surge = "33%"
+    max_surge = var.ai_max_surge
   }
 
   tags = var.tags

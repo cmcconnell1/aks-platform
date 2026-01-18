@@ -37,6 +37,8 @@ Thumbs.db
 .env.local
 .env.*.local
 github-actions-credentials.json
+.azure-oidc-config.json
+**/secrets.tfvars
 
 # Azure configuration files (these SHOULD be committed)
 # - terraform/environments/*/backend.conf

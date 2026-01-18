@@ -111,13 +111,34 @@ az storage container create \
 
 ## Step 2: GitHub Repository Setup
 
-Set up GitHub repository secrets for CI/CD automation:
+Set up GitHub Actions authentication with Azure. We recommend **OIDC federation** (secretless authentication) for enhanced security.
+
+### Option A: OIDC Federation (Recommended)
+
+OIDC federation eliminates the need for stored secrets by using short-lived, automatically-rotating tokens:
 
 ```bash
 # Login to GitHub CLI
 gh auth login
 
-# Run the GitHub secrets setup script
+# Run the OIDC setup script
+./scripts/setup-azure-oidc.sh
+```
+
+This script will:
+- Create an Azure AD application with federated credentials
+- Configure trust between GitHub Actions and Azure
+- Set up environment-specific authentication
+- No client secrets to manage or rotate
+
+For detailed information, see [Azure GitHub OIDC Setup Guide](./azure-github-oidc-setup.md).
+
+### Option B: Service Principal Secrets (Legacy)
+
+If OIDC is not suitable for your environment, you can use traditional service principal secrets:
+
+```bash
+# Run the secrets setup script
 ./scripts/setup-github-secrets.sh
 ```
 
@@ -126,29 +147,81 @@ This script will:
 - Set up optional secrets (Infracost, Slack notifications)
 - Guide you through environment protection setup
 
+**Note**: Service principal secrets require manual rotation (quarterly recommended).
+
 ## Step 3: Configure Environment
 
-If you used the automated setup, configuration files are already generated. Otherwise:
+Each environment (dev, staging, prod) has its own configuration in `terraform/environments/<env>/`.
 
-1. **Copy configuration files**:
+### Configuration Files Structure
+
+```
+terraform/environments/
+├── dev/
+│   ├── terraform.tfvars     # Development environment values
+│   └── backend.conf         # Dev state storage config
+├── staging/
+│   ├── terraform.tfvars     # Staging environment values
+│   └── backend.conf         # Staging state storage config
+└── prod/
+    ├── terraform.tfvars     # Production environment values
+    └── backend.conf         # Prod state storage config
+```
+
+### Key Configuration Differences
+
+| Setting | Dev | Staging | Prod |
+|---------|-----|---------|------|
+| Node count | 2 | 2 | 3 |
+| Max nodes | 5 | 8 | 15 |
+| VM size | D2s_v3 | D2s_v3 | D4s_v3 |
+| Demo cert | Yes | Yes | No |
+| Let's Encrypt | No | No | Yes |
+| Prometheus retention | 15d | 30d | 90d |
+
+For complete configuration details, see [Environment Configuration Guide](./environment-configuration-guide.md).
+
+### Update Environment Configuration
+
+1. **Review and update environment-specific values**:
    ```bash
-   cd terraform/environments/dev
-   cp terraform.tfvars.example terraform.tfvars
-   cp backend.conf.example backend.conf
+   # Edit the environment configuration
+   vim terraform/environments/dev/terraform.tfvars
    ```
 
-2. **Update terraform.tfvars** with your specific values:
+2. **Key settings to customize**:
    ```hcl
-   # Update these values
+   # SSL Certificate Configuration
    ssl_certificate_subject = "your-domain.com"
    ssl_certificate_dns_names = ["your-domain.com", "*.your-domain.com"]
+
+   # Network access (for non-private clusters)
    authorized_ip_ranges = ["your.public.ip.address/32"]
+
+   # Let's Encrypt (for production)
+   enable_cert_manager = true
+   letsencrypt_email   = "admin@your-domain.com"
    ```
 
-3. **Load environment variables** (if using manual deployment):
+3. **Set required credentials** (no defaults for security):
    ```bash
-   source .env
+   # Required environment variables for Terraform
+   export TF_VAR_grafana_admin_password="your-secure-password"
+   export TF_VAR_mlflow_db_password="your-secure-password"
+   export TF_VAR_mlflow_minio_password="your-secure-password"
    ```
+
+   See [Security Guide](./security.md) for credential management best practices.
+
+### Backend Configuration
+
+Update `backend.conf` with your storage account:
+```hcl
+resource_group_name  = "aks-platform-terraform-state-rg"
+storage_account_name = "your-storage-account-name"
+container_name       = "tfstate"
+key                  = "dev/terraform.tfstate"
+```
 
 ## Step 4: Deploy Infrastructure
 
@@ -379,3 +452,11 @@ terraform destroy -var-file=environments/dev/terraform.tfvars
 3. Configure backup strategies
 4. Implement security policies
 5. Set up CI/CD pipelines
+
+## Related Documentation
+
+- [Environment Configuration Guide](./environment-configuration-guide.md) - Detailed variable reference and environment differences
+- [AKS Cluster Upgrade Guide](./aks-cluster-upgrade-guide.md) - Kubernetes version upgrades
+- [Security Guide](./security.md) - Security best practices and credential management
+- [Production Update Strategy](./production-update-strategy.md) - Safe production deployment procedures
+- [Troubleshooting Guide](./troubleshooting.md) - Common issues and solutions

@@ -14,7 +14,7 @@ resource "azurerm_container_registry" "main" {
     for_each = var.enable_public_network_access && length(var.allowed_ip_ranges) > 0 ? [1] : []
     content {
       default_action = "Deny"
-      
+
       dynamic "ip_rule" {
         for_each = var.allowed_ip_ranges
         content {

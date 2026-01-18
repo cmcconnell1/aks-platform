@@ -35,9 +35,9 @@ resource "kubectl_manifest" "cert_manager_crds" {
   for_each = toset([
     "https://github.com/cert-manager/cert-manager/releases/download/v1.13.2/cert-manager.crds.yaml"
   ])
-  
+
   yaml_body = data.http.cert_manager_crds[each.key].response_body
-  
+
   depends_on = [kubernetes_namespace.cert_manager]
 }
 
@@ -45,7 +45,7 @@ data "http" "cert_manager_crds" {
   for_each = toset([
     "https://github.com/cert-manager/cert-manager/releases/download/v1.13.2/cert-manager.crds.yaml"
   ])
-  
+
   url = each.key
 }
 
@@ -60,24 +60,24 @@ resource "helm_release" "cert_manager" {
   values = [
     yamlencode({
       installCRDs = false # We install them separately above
-      
+
       global = {
         leaderElection = {
           namespace = kubernetes_namespace.cert_manager.metadata[0].name
         }
       }
-      
+
       # Enable Azure Workload Identity
       serviceAccount = {
         annotations = {
           "azure.workload.identity/client-id" = var.cert_manager_identity_client_id
         }
       }
-      
+
       podLabels = {
         "azure.workload.identity/use" = "true"
       }
-      
+
       # Resource limits
       resources = {
         limits = {
@@ -89,7 +89,7 @@ resource "helm_release" "cert_manager" {
           memory = "64Mi"
         }
       }
-      
+
       webhook = {
         resources = {
           limits = {
@@ -102,7 +102,7 @@ resource "helm_release" "cert_manager" {
           }
         }
       }
-      
+
       cainjector = {
         resources = {
           limits = {
@@ -124,7 +124,7 @@ resource "helm_release" "cert_manager" {
 # Let's Encrypt ClusterIssuer for staging
 resource "kubectl_manifest" "letsencrypt_staging" {
   count = var.enable_letsencrypt_staging ? 1 : 0
-  
+
   yaml_body = yamlencode({
     apiVersion = "cert-manager.io/v1"
     kind       = "ClusterIssuer"
@@ -157,7 +157,7 @@ resource "kubectl_manifest" "letsencrypt_staging" {
 # Let's Encrypt ClusterIssuer for production
 resource "kubectl_manifest" "letsencrypt_prod" {
   count = var.enable_letsencrypt_prod ? 1 : 0
-  
+
   yaml_body = yamlencode({
     apiVersion = "cert-manager.io/v1"
     kind       = "ClusterIssuer"
@@ -190,7 +190,7 @@ resource "kubectl_manifest" "letsencrypt_prod" {
 # DNS01 solver for wildcard certificates (optional)
 resource "kubectl_manifest" "letsencrypt_dns01" {
   count = var.enable_dns01_solver ? 1 : 0
-  
+
   yaml_body = yamlencode({
     apiVersion = "cert-manager.io/v1"
     kind       = "ClusterIssuer"
@@ -208,12 +208,12 @@ resource "kubectl_manifest" "letsencrypt_dns01" {
           {
             dns01 = {
               azureDNS = {
-                clientID      = var.cert_manager_identity_client_id
-                subscriptionID = var.subscription_id
-                tenantID      = var.tenant_id
+                clientID          = var.cert_manager_identity_client_id
+                subscriptionID    = var.subscription_id
+                tenantID          = var.tenant_id
                 resourceGroupName = var.dns_resource_group_name
-                hostedZoneName   = var.dns_zone_name
-                environment     = "AzurePublicCloud"
+                hostedZoneName    = var.dns_zone_name
+                environment       = "AzurePublicCloud"
               }
             }
           }
@@ -228,7 +228,7 @@ resource "kubectl_manifest" "letsencrypt_dns01" {
 # Example Certificate resource for automatic certificate provisioning
 resource "kubectl_manifest" "example_certificate" {
   count = var.create_example_certificate ? 1 : 0
-  
+
   yaml_body = yamlencode({
     apiVersion = "cert-manager.io/v1"
     kind       = "Certificate"

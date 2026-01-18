@@ -129,3 +129,76 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+# Network configuration
+variable "service_cidr" {
+  description = "CIDR for Kubernetes services"
+  type        = string
+  default     = "10.2.0.0/24"
+}
+
+variable "dns_service_ip" {
+  description = "IP address for Kubernetes DNS service"
+  type        = string
+  default     = "10.2.0.10"
+}
+
+# OS disk configuration
+variable "system_os_disk_size_gb" {
+  description = "OS disk size in GB for system node pool"
+  type        = number
+  default     = 100
+}
+
+variable "user_os_disk_size_gb" {
+  description = "OS disk size in GB for user node pool"
+  type        = number
+  default     = 100
+}
+
+variable "ai_os_disk_size_gb" {
+  description = "OS disk size in GB for AI node pool"
+  type        = number
+  default     = 200
+}
+
+# Upgrade settings
+variable "system_max_surge" {
+  description = "Max surge for system node pool upgrades"
+  type        = string
+  default     = "10%"
+}
+
+variable "user_max_surge" {
+  description = "Max surge for user node pool upgrades"
+  type        = string
+  default     = "33%"
+}
+
+variable "ai_max_surge" {
+  description = "Max surge for AI node pool upgrades"
+  type        = string
+  default     = "33%"
+}
+
+# Autoscaler profile
+variable "autoscaler_profile" {
+  description = "Autoscaler profile configuration"
+  type = object({
+    balance_similar_node_groups      = optional(bool, false)
+    expander                         = optional(string, "random")
+    max_graceful_termination_sec     = optional(string, "600")
+    max_node_provisioning_time       = optional(string, "15m")
+    max_unready_nodes                = optional(number, 3)
+    max_unready_percentage           = optional(number, 45)
+    new_pod_scale_up_delay           = optional(string, "10s")
+    scale_down_delay_after_add       = optional(string, "10m")
+    scale_down_delay_after_delete    = optional(string, "10s")
+    scale_down_delay_after_failure   = optional(string, "3m")
+    scan_interval                    = optional(string, "10s")
+    scale_down_unneeded              = optional(string, "10m")
+    scale_down_unready               = optional(string, "20m")
+    scale_down_utilization_threshold = optional(string, "0.5")
+  })
+  default = {}
+}

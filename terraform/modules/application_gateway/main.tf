@@ -6,7 +6,7 @@ resource "azurerm_public_ip" "app_gateway" {
   allocation_method   = "Static"
   sku                 = "Standard"
   zones               = ["1", "2", "3"]
-  
+
   tags = var.tags
 }
 
@@ -15,7 +15,7 @@ resource "azurerm_user_assigned_identity" "app_gateway" {
   name                = "${var.project_name}-${var.environment}-appgw-identity"
   resource_group_name = var.resource_group_name
   location            = var.location
-  
+
   tags = var.tags
 }
 
@@ -150,11 +150,11 @@ resource "azurerm_application_gateway" "main" {
     for_each = var.enable_waf ? [1] : []
     content {
       enabled                  = true
-      firewall_mode           = var.waf_mode
-      rule_set_type           = "OWASP"
-      rule_set_version        = var.waf_rule_set_version
-      file_upload_limit_mb    = var.waf_file_upload_limit_mb
-      request_body_check      = true
+      firewall_mode            = var.waf_mode
+      rule_set_type            = "OWASP"
+      rule_set_version         = var.waf_rule_set_version
+      file_upload_limit_mb     = var.waf_file_upload_limit_mb
+      request_body_check       = true
       max_request_body_size_kb = var.waf_max_request_body_size_kb
 
       dynamic "disabled_rule_group" {
@@ -194,17 +194,17 @@ resource "azurerm_application_gateway" "main" {
 # AGIC Add-on for AKS (requires AKS cluster to be created first)
 resource "azurerm_kubernetes_cluster_extension" "agic" {
   count = var.enable_agic ? 1 : 0
-  
+
   name           = "agic"
   cluster_id     = var.aks_cluster_id
   extension_type = "Microsoft.AzureML.Kubernetes"
 
   configuration_settings = {
-    "appgw.subscriptionId"    = var.subscription_id
-    "appgw.resourceGroup"     = var.resource_group_name
-    "appgw.name"              = azurerm_application_gateway.main.name
-    "appgw.usePrivateIP"      = "false"
-    "armAuth.type"            = "workloadIdentity"
+    "appgw.subscriptionId"       = var.subscription_id
+    "appgw.resourceGroup"        = var.resource_group_name
+    "appgw.name"                 = azurerm_application_gateway.main.name
+    "appgw.usePrivateIP"         = "false"
+    "armAuth.type"               = "workloadIdentity"
     "armAuth.identityResourceID" = azurerm_user_assigned_identity.app_gateway.id
     "armAuth.identityClientID"   = azurerm_user_assigned_identity.app_gateway.client_id
   }

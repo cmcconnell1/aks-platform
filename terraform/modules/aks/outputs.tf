@@ -83,3 +83,32 @@ output "ai_node_pool_id" {
   description = "ID of the AI/ML node pool"
   value       = var.enable_ai_node_pool ? azurerm_kubernetes_cluster_node_pool.ai[0].id : null
 }
+
+# Upgrade-related outputs
+output "kubernetes_version" {
+  description = "Current Kubernetes version of the cluster"
+  value       = azurerm_kubernetes_cluster.main.kubernetes_version
+}
+
+output "current_kubernetes_version" {
+  description = "Actual running Kubernetes version (may differ during upgrade)"
+  value       = azurerm_kubernetes_cluster.main.current_kubernetes_version
+}
+
+output "node_pool_versions" {
+  description = "Kubernetes versions for each node pool"
+  value = {
+    system = azurerm_kubernetes_cluster.main.default_node_pool[0].orchestrator_version
+    user   = azurerm_kubernetes_cluster_node_pool.user.orchestrator_version
+    ai     = var.enable_ai_node_pool ? azurerm_kubernetes_cluster_node_pool.ai[0].orchestrator_version : null
+  }
+}
+
+output "upgrade_settings" {
+  description = "Upgrade settings for each node pool"
+  value = {
+    system_max_surge = azurerm_kubernetes_cluster.main.default_node_pool[0].upgrade_settings[0].max_surge
+    user_max_surge   = azurerm_kubernetes_cluster_node_pool.user.upgrade_settings[0].max_surge
+    ai_max_surge     = var.enable_ai_node_pool ? azurerm_kubernetes_cluster_node_pool.ai[0].upgrade_settings[0].max_surge : null
+  }
+}

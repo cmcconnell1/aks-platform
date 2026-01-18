@@ -48,26 +48,26 @@ resource "helm_release" "prometheus" {
       }
 
       grafana = {
-        enabled = true
+        enabled       = true
         adminPassword = var.grafana_admin_password
-        
+
         service = {
           type = "ClusterIP"
         }
-        
+
         ingress = {
-          enabled = var.enable_grafana_ingress
+          enabled     = var.enable_grafana_ingress
           annotations = var.grafana_ingress_annotations
-          hosts = var.grafana_ingress_hosts
-          tls = var.grafana_ingress_tls
+          hosts       = var.grafana_ingress_hosts
+          tls         = var.grafana_ingress_tls
         }
-        
+
         persistence = {
-          enabled = true
+          enabled          = true
           storageClassName = "managed-csi"
-          size = var.grafana_storage_size
+          size             = var.grafana_storage_size
         }
-        
+
         resources = {
           limits = {
             cpu    = "500m"
@@ -78,22 +78,22 @@ resource "helm_release" "prometheus" {
             memory = "256Mi"
           }
         }
-        
+
         # Default dashboards
         defaultDashboardsEnabled = true
-        
+
         # Additional dashboards
         dashboardProviders = {
           "dashboardproviders.yaml" = {
             apiVersion = 1
             providers = [
               {
-                name = "default"
-                orgId = 1
-                folder = ""
-                type = "file"
+                name            = "default"
+                orgId           = 1
+                folder          = ""
+                type            = "file"
                 disableDeletion = false
-                editable = true
+                editable        = true
                 options = {
                   path = "/var/lib/grafana/dashboards/default"
                 }
@@ -105,7 +105,7 @@ resource "helm_release" "prometheus" {
 
       alertmanager = {
         enabled = var.enable_alertmanager
-        
+
         alertmanagerSpec = {
           storage = {
             volumeClaimTemplate = {
@@ -120,7 +120,7 @@ resource "helm_release" "prometheus" {
               }
             }
           }
-          
+
           resources = {
             limits = {
               cpu    = "200m"
@@ -164,11 +164,11 @@ resource "helm_release" "loki" {
       loki = {
         enabled = true
         persistence = {
-          enabled = true
+          enabled          = true
           storageClassName = "managed-csi"
-          size = var.loki_storage_size
+          size             = var.loki_storage_size
         }
-        
+
         resources = {
           limits = {
             cpu    = "500m"
@@ -183,7 +183,7 @@ resource "helm_release" "loki" {
 
       promtail = {
         enabled = true
-        
+
         resources = {
           limits = {
             cpu    = "200m"
@@ -222,7 +222,7 @@ resource "helm_release" "jaeger" {
   values = [
     yamlencode({
       provisionDataStore = {
-        cassandra = false
+        cassandra     = false
         elasticsearch = true
       }
 

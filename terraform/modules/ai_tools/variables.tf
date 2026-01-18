@@ -77,9 +77,9 @@ variable "jupyter_ingress_annotations" {
   description = "Annotations for JupyterHub ingress"
   type        = map(string)
   default = {
-    "kubernetes.io/ingress.class"                    = "azure/application-gateway"
-    "appgw.ingress.kubernetes.io/ssl-redirect"       = "true"
-    "appgw.ingress.kubernetes.io/backend-protocol"   = "http"
+    "kubernetes.io/ingress.class"                  = "azure/application-gateway"
+    "appgw.ingress.kubernetes.io/ssl-redirect"     = "true"
+    "appgw.ingress.kubernetes.io/backend-protocol" = "http"
   }
 }
 
@@ -91,7 +91,7 @@ variable "jupyter_ingress_hosts" {
 
 variable "jupyter_ingress_tls" {
   description = "TLS configuration for JupyterHub ingress"
-  type        = list(object({
+  type = list(object({
     secretName = string
     hosts      = list(string)
   }))
@@ -118,17 +118,17 @@ variable "mlflow_artifact_storage_size" {
 }
 
 variable "mlflow_db_password" {
-  description = "Database password for MLflow"
+  description = "Database password for MLflow (required - no default for security)"
   type        = string
-  default     = "mlflow123"
   sensitive   = true
+  # No default - must be provided explicitly for security
 }
 
 variable "mlflow_minio_password" {
-  description = "MinIO password for MLflow artifacts"
+  description = "MinIO password for MLflow artifacts (required - no default for security)"
   type        = string
-  default     = "minio123"
   sensitive   = true
+  # No default - must be provided explicitly for security
 }
 
 variable "enable_mlflow_ingress" {
@@ -141,9 +141,9 @@ variable "mlflow_ingress_annotations" {
   description = "Annotations for MLflow ingress"
   type        = map(string)
   default = {
-    "kubernetes.io/ingress.class"                    = "azure/application-gateway"
-    "appgw.ingress.kubernetes.io/ssl-redirect"       = "true"
-    "appgw.ingress.kubernetes.io/backend-protocol"   = "http"
+    "kubernetes.io/ingress.class"                  = "azure/application-gateway"
+    "appgw.ingress.kubernetes.io/ssl-redirect"     = "true"
+    "appgw.ingress.kubernetes.io/backend-protocol" = "http"
   }
 }
 
@@ -155,7 +155,7 @@ variable "mlflow_ingress_hosts" {
 
 variable "mlflow_ingress_tls" {
   description = "TLS configuration for MLflow ingress"
-  type        = list(object({
+  type = list(object({
     secretName = string
     hosts      = list(string)
   }))

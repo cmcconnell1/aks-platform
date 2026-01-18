@@ -19,10 +19,10 @@ variable "prometheus_storage_size" {
 
 # Grafana Configuration
 variable "grafana_admin_password" {
-  description = "Admin password for Grafana"
+  description = "Admin password for Grafana (required - no default for security)"
   type        = string
-  default     = "admin123"
   sensitive   = true
+  # No default - must be provided explicitly for security
 }
 
 variable "enable_grafana_ingress" {
@@ -35,9 +35,9 @@ variable "grafana_ingress_annotations" {
   description = "Annotations for Grafana ingress"
   type        = map(string)
   default = {
-    "kubernetes.io/ingress.class"                    = "azure/application-gateway"
-    "appgw.ingress.kubernetes.io/ssl-redirect"       = "true"
-    "appgw.ingress.kubernetes.io/backend-protocol"   = "http"
+    "kubernetes.io/ingress.class"                  = "azure/application-gateway"
+    "appgw.ingress.kubernetes.io/ssl-redirect"     = "true"
+    "appgw.ingress.kubernetes.io/backend-protocol" = "http"
   }
 }
 
@@ -49,7 +49,7 @@ variable "grafana_ingress_hosts" {
 
 variable "grafana_ingress_tls" {
   description = "TLS configuration for Grafana ingress"
-  type        = list(object({
+  type = list(object({
     secretName = string
     hosts      = list(string)
   }))
