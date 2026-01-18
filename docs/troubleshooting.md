@@ -162,8 +162,9 @@ kubectl get pods -n argocd
 kubectl get pods -n monitoring
 kubectl get pods -n ai-tools
 
-# Check ingress and networking
-kubectl get ingress --all-namespaces
+# Check AGC and networking
+kubectl get gateways,httproutes -A
+kubectl get pods -n azure-alb-system
 kubectl get svc --all-namespaces | grep LoadBalancer
 ```
 
@@ -303,16 +304,19 @@ az vmss restart --resource-group <node-resource-group> --name <vmss-name>
 # Check ArgoCD pods
 kubectl get pods -n argocd
 
-# Check ingress configuration
-kubectl get ingress -n argocd
-kubectl describe ingress argocd-server-ingress -n argocd
+# Check HTTPRoute configuration (AGC)
+kubectl get httproute -n argocd
+kubectl describe httproute argocd-server -n argocd
+
+# Check Gateway status
+kubectl get gateway -A
 
 # Port forward for direct access
 kubectl port-forward svc/argocd-server -n argocd 8080:443
 
-# Check Application Gateway backend health
-az network application-gateway show-backend-health \
-  --resource-group <rg> --name <app-gateway-name>
+# Check ALB Controller status
+kubectl get pods -n azure-alb-system
+kubectl logs -n azure-alb-system -l app=alb-controller
 ```
 
 #### **Problem**: "Applications not syncing"
@@ -436,7 +440,7 @@ kubectl rollout restart deployment/mlflow -n ai-tools
 
 ## Networking Issues
 
-### **Application Gateway Problems**
+### **Application Gateway for Containers (AGC) Problems**
 
 #### **Problem**: "502 Bad Gateway errors"
 ```bash
@@ -445,9 +449,17 @@ kubectl rollout restart deployment/mlflow -n ai-tools
 
 **Solution**:
 ```bash
-# Check backend pool health
-az network application-gateway show-backend-health \
-  --resource-group <rg> --name <app-gateway>
+# Check ALB Controller status
+kubectl get pods -n azure-alb-system
+kubectl logs -n azure-alb-system -l app=alb-controller
+
+# Check Gateway status
+kubectl get gateway -A -o wide
+kubectl describe gateway <gateway-name>
+
+# Check HTTPRoute status
+kubectl get httproute -A
+kubectl describe httproute <route-name> -n <namespace>
 
 # Verify backend targets
 kubectl get endpoints -n <namespace>
@@ -455,9 +467,27 @@ kubectl get endpoints -n <namespace>
 # Check application pod health
 kubectl get pods -n <namespace>
 kubectl logs <pod-name> -n <namespace>
+```
 
-# Verify ingress annotations
-kubectl get ingress <ingress-name> -n <namespace> -o yaml
+#### **Problem**: "HTTPRoute not routing traffic"
+```bash
+# Traffic not reaching backend services
+```
+
+**Solution**:
+```bash
+# Check HTTPRoute is accepted
+kubectl get httproute <route-name> -n <namespace> -o yaml
+
+# Verify parentRefs point to correct Gateway
+kubectl get gateway -A
+
+# Check backend service exists and has endpoints
+kubectl get svc,endpoints -n <namespace>
+
+# Verify AGC association
+az network alb association list \
+  --resource-group <rg> --alb-name <agc-name>
 ```
 
 #### **Problem**: "SSL certificate issues"
@@ -477,6 +507,9 @@ kubectl describe certificate <cert-name> -n <namespace>
 # Check certificate issuer
 kubectl get clusterissuer
 kubectl describe clusterissuer letsencrypt-prod
+
+# Check Gateway TLS configuration
+kubectl get gateway <gateway-name> -o yaml | grep -A 20 tls
 ```
 
 ### **DNS Resolution Issues**

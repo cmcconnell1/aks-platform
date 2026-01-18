@@ -7,7 +7,7 @@ This guide explains how to set up and test the Azure AKS GitOps platform when yo
 You can fully test and use this platform without owning a domain by using:
 - Demo SSL certificates (self-signed)
 - Local hosts file for DNS resolution
-- Application Gateway public IP for access
+- Application Gateway for Containers (AGC) frontend FQDN for access
 
 ## Quick Setup (No Domain)
 
@@ -38,22 +38,33 @@ authorized_ip_ranges = ["your.public.ip.address/32"]
 terraform apply -var-file=environments/dev/terraform.tfvars
 ```
 
-### Step 3: Get Application Gateway IP
+### Step 3: Get AGC Frontend FQDN
 
 ```bash
-# Get the public IP
-terraform output application_gateway_public_ip
+# Get the AGC frontend FQDN
+terraform output agc_frontend_fqdn
+# Example output: abc123.eastus.alb.azure.com
+
+# Get the resolved IP address
+nslookup $(terraform output -raw agc_frontend_fqdn)
 # Example output: 20.123.45.67
 ```
 
 ### Step 4: Configure Local DNS (Hosts File)
+
+First, resolve the AGC FQDN to get the IP address:
+```bash
+# Get the IP from the FQDN
+AGC_IP=$(nslookup $(terraform output -raw agc_frontend_fqdn) | grep -A1 "Name:" | grep Address | awk '{print $2}')
+echo $AGC_IP
+```
 
 **Linux/macOS:**
 ```bash
 # Edit hosts file
 sudo nano /etc/hosts
 
-# Add these lines (replace with your actual IP)
+# Add these lines (replace with your actual IP from AGC)
 20.123.45.67 argocd.aks-platform.local
 20.123.45.67 grafana.aks-platform.local
 20.123.45.67 jupyter.aks-platform.local
@@ -65,7 +76,7 @@ sudo nano /etc/hosts
 # Run as Administrator
 notepad C:\Windows\System32\drivers\etc\hosts
 
-# Add these lines (replace with your actual IP)
+# Add these lines (replace with your actual IP from AGC)
 20.123.45.67 argocd.aks-platform.local
 20.123.45.67 grafana.aks-platform.local
 20.123.45.67 jupyter.aks-platform.local
@@ -147,12 +158,16 @@ enable_letsencrypt_staging = true  # Start with staging
 
 ### Step 3: Update DNS
 
-Point your domain to the Application Gateway IP:
+Point your domain to the AGC frontend FQDN:
 
 ```bash
-# Create DNS A records
-yourdomain.com        -> 20.123.45.67
-*.yourdomain.com      -> 20.123.45.67
+# Create DNS CNAME records pointing to AGC frontend
+yourdomain.com        CNAME abc123.eastus.alb.azure.com
+*.yourdomain.com      CNAME abc123.eastus.alb.azure.com
+
+# Or create A records if you need to
+# First get the IP from the FQDN
+nslookup $(terraform output -raw agc_frontend_fqdn)
 ```
 
 ### Step 4: Redeploy
@@ -165,7 +180,7 @@ terraform apply -var-file=environments/dev/terraform.tfvars
 
 ### Option 1: Shared Hosts File
 
-Share the Application Gateway IP with your team:
+Share the AGC frontend IP (resolved from FQDN) with your team:
 
 ```bash
 # Each team member adds to their hosts file
@@ -181,7 +196,7 @@ Set up a free subdomain that everyone can use:
 
 1. **Register at Duck DNS**: duckdns.org
 2. **Create subdomain**: `myteam-aks.duckdns.org`
-3. **Point to Application Gateway IP**
+3. **Point to AGC frontend IP** (resolve the FQDN first)
 4. **Update terraform.tfvars**:
    ```hcl
    ssl_certificate_subject = "myteam-aks.duckdns.org"
@@ -206,9 +221,9 @@ Access applications:
 
 ### Can't Access Applications
 
-1. **Check Application Gateway IP**:
+1. **Check AGC Frontend FQDN**:
    ```bash
-   terraform output application_gateway_public_ip
+   terraform output agc_frontend_fqdn
    ```
 
 2. **Verify hosts file**:
@@ -218,10 +233,16 @@ Access applications:
    ping argocd.aks-platform.local
    ```
 
-3. **Check Application Gateway health**:
+3. **Check AGC health**:
    ```bash
-   # Test direct IP access
-   curl -I http://20.123.45.67
+   # Check ALB Controller status
+   kubectl get pods -n azure-alb-system
+
+   # Check Gateway status
+   kubectl get gateway -A
+
+   # Check HTTPRoutes
+   kubectl get httproutes -A
    ```
 
 ### SSL Certificate Issues
@@ -231,11 +252,15 @@ Access applications:
    az keyvault certificate list --vault-name $(terraform output -raw key_vault_name)
    ```
 
-2. **Verify Application Gateway SSL**:
+2. **Verify cert-manager certificates**:
    ```bash
-   az network application-gateway ssl-cert list \
-     --gateway-name $(terraform output -raw application_gateway_name) \
-     --resource-group $(terraform output -raw resource_group_name)
+   kubectl get certificates -A
+   kubectl describe certificate -A
+   ```
+
+3. **Check Gateway TLS configuration**:
+   ```bash
+   kubectl get gateway -A -o yaml | grep -A 20 tls
    ```
 
 ### Hosts File Not Working

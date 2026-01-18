@@ -74,12 +74,10 @@ variable "enable_jupyter_ingress" {
 }
 
 variable "jupyter_ingress_annotations" {
-  description = "Annotations for JupyterHub ingress"
+  description = "Annotations for JupyterHub ingress (AGC compatible)"
   type        = map(string)
   default = {
-    "kubernetes.io/ingress.class"                  = "azure/application-gateway"
-    "appgw.ingress.kubernetes.io/ssl-redirect"     = "true"
-    "appgw.ingress.kubernetes.io/backend-protocol" = "http"
+    "kubernetes.io/ingress.class" = "azure-alb-external"
   }
 }
 
@@ -138,12 +136,10 @@ variable "enable_mlflow_ingress" {
 }
 
 variable "mlflow_ingress_annotations" {
-  description = "Annotations for MLflow ingress"
+  description = "Annotations for MLflow ingress (AGC compatible)"
   type        = map(string)
   default = {
-    "kubernetes.io/ingress.class"                  = "azure/application-gateway"
-    "appgw.ingress.kubernetes.io/ssl-redirect"     = "true"
-    "appgw.ingress.kubernetes.io/backend-protocol" = "http"
+    "kubernetes.io/ingress.class" = "azure-alb-external"
   }
 }
 
@@ -180,4 +176,36 @@ variable "enable_kubeflow" {
   description = "Enable Kubeflow deployment"
   type        = bool
   default     = false
+}
+
+# =============================================================================
+# Azure Workload Identity Configuration
+# =============================================================================
+
+variable "workload_identity_client_id" {
+  description = "Client ID of the managed identity for Azure Workload Identity"
+  type        = string
+  default     = null
+}
+
+variable "enable_workload_identity" {
+  description = "Enable Azure Workload Identity for AI tools components"
+  type        = bool
+  default     = true
+}
+
+# =============================================================================
+# Application Gateway for Containers (AGC) Configuration
+# =============================================================================
+
+variable "agc_gateway_name" {
+  description = "Name of the AGC Gateway resource for HTTPRoute"
+  type        = string
+  default     = null
+}
+
+variable "agc_gateway_namespace" {
+  description = "Namespace of the AGC Gateway resource"
+  type        = string
+  default     = "default"
 }

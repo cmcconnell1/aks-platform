@@ -38,7 +38,7 @@ location = "West US 2"  # Different region if needed
 
 # Subnet configurations with non-overlapping ranges
 aks_subnet_address_prefix = "10.1.1.0/24"
-app_gateway_subnet_address_prefix = "10.1.2.0/24"
+agc_subnet_address_prefix = "10.1.2.0/24"
 private_endpoint_subnet_address_prefix = "10.1.3.0/24"
 database_subnet_address_prefix = "10.1.4.0/24"
 
@@ -71,7 +71,7 @@ environment = "prod"              # or "dev", "staging"
 # This will create resources like:
 # - rg-aks-platform-prod-eastus
 # - aks-aks-platform-prod-eastus
-# - agw-aks-platform-prod-eastus
+# - alb-aks-platform-prod-eastus (AGC)
 ```
 
 ## Use Case 3: Existing Tenant - Existing AKS Integration
@@ -99,10 +99,10 @@ data "azurerm_resource_group" "existing" {
 module "gitops" {
   source = "../modules/gitops"
   count  = var.enable_argocd ? 1 : 0
-  
+
   argocd_namespace = var.argocd_namespace
   argocd_domain    = "argocd.${var.ssl_certificate_subject}"
-  enable_ingress   = var.enable_application_gateway
+  enable_ingress   = var.enable_agc
 }
 
 module "ai_tools" {
@@ -118,8 +118,8 @@ module "ai_tools" {
 module "monitoring" {
   source = "../modules/monitoring"
   count  = var.enable_monitoring ? 1 : 0
-  
-  enable_grafana_ingress = var.enable_application_gateway
+
+  enable_grafana_ingress = var.enable_agc
   grafana_ingress_hosts  = ["grafana.${var.ssl_certificate_subject}"]
 }
 ```
@@ -222,7 +222,7 @@ project_name = "aks-platform-integration"
 location = "East US"  # Should match existing resources
 
 # Disable conflicting components
-enable_application_gateway = false  # If you have existing ingress
+enable_agc = false  # If you have existing ingress
 create_demo_ssl_certificate = false  # If you have existing certs
 ```
 

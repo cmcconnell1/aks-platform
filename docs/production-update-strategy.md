@@ -97,7 +97,7 @@ graph LR
 
 #### Infrastructure Changes (High Risk)
 - **AKS cluster modifications**: Node pool changes, networking updates
-- **Application Gateway changes**: Routing rules, SSL certificates
+- **AGC changes**: Gateway resources, HTTPRoute configurations, TLS settings
 - **Storage modifications**: Persistent volume changes
 - **Security updates**: RBAC, network policies
 
@@ -229,8 +229,9 @@ kubectl top nodes
 kubectl get pods --all-namespaces -o wide
 kubectl get events --sort-by='.lastTimestamp'
 
-# Application Gateway health
-az network application-gateway show-health
+# AGC and Gateway health
+kubectl get gateway -A
+kubectl get httproutes -A
 
 # Service health checks
 curl -f https://your-domain.com/health

@@ -1,6 +1,6 @@
 # Azure AKS Platform Deployment Guide
 
-This guide walks you through deploying the complete Azure AKS platform with Application Gateway Ingress Controller (AGIC), ArgoCD, and AI/ML tools.
+This guide walks you through deploying the complete Azure AKS platform with Application Gateway for Containers (AGC), ArgoCD, and AI/ML tools.
 
 ## Prerequisites
 
@@ -266,15 +266,22 @@ key                  = "dev/terraform.tfstate"
 The deployment will create:
 - Resource Group
 - Virtual Network with subnets and security groups
-- AKS cluster with system and user node pools
+- AKS cluster with system and user node pools (OIDC issuer enabled)
 - AI/ML node pool with GPU support
-- Application Gateway with AGIC and WAF
+- **Application Gateway for Containers (AGC)** with:
+  - ALB Controller for Kubernetes integration
+  - Gateway API support for traffic routing
+  - HTTPRoute resources for each component
 - Azure Container Registry with private endpoints
 - Key Vault with SSL certificates and secrets
 - Log Analytics workspace and Application Insights
 - Monitoring stack (Prometheus, Grafana, Loki)
 - GitOps platform (ArgoCD)
 - AI/ML tools (JupyterHub, MLflow)
+- **Azure Workload Identity** configuration:
+  - Managed identities for each component
+  - Federated credentials for pod-to-Azure authentication
+  - ServiceAccount annotations for all workloads
 
 ## Step 5: Configure kubectl
 
@@ -298,8 +305,8 @@ kubectl get nodes -o wide
 # Check system pods
 kubectl get pods -n kube-system
 
-# Check AGIC
-kubectl get pods -n kube-system | grep ingress
+# Check ALB Controller (for AGC)
+kubectl get pods -n azure-alb-system
 ```
 
 ### Check ArgoCD
@@ -339,20 +346,22 @@ kubectl get secret --namespace monitoring prometheus-grafana \
 
 ## Step 7: Access Applications
 
-### Through Application Gateway (Recommended)
+### Through Application Gateway for Containers (Recommended)
 
-1. **Get Application Gateway IP**:
+1. **Get AGC Frontend FQDN**:
    ```bash
-   terraform output application_gateway_public_ip
+   terraform output agc_frontend_fqdn
    ```
 
-2. **Update DNS or hosts file**:
+2. **Update DNS (CNAME records recommended)**:
    ```
-   <APP_GATEWAY_IP> argocd.your-domain.com
-   <APP_GATEWAY_IP> grafana.your-domain.com
-   <APP_GATEWAY_IP> jupyter.your-domain.com
-   <APP_GATEWAY_IP> mlflow.your-domain.com
+   argocd.your-domain.com    CNAME  <AGC_FRONTEND_FQDN>
+   grafana.your-domain.com   CNAME  <AGC_FRONTEND_FQDN>
+   jupyter.your-domain.com   CNAME  <AGC_FRONTEND_FQDN>
+   mlflow.your-domain.com    CNAME  <AGC_FRONTEND_FQDN>
    ```
+
+   Or for testing, add to hosts file with the resolved IP.
 
 3. **Access applications**:
    - ArgoCD: https://argocd.your-domain.com
@@ -392,15 +401,19 @@ docker push $(terraform output -raw container_registry_login_server)/hello-world
 
 ### Common Issues
 
-1. **AGIC not working**:
+1. **AGC/ALB Controller not working**:
    ```bash
-   # Check AGIC logs
-   kubectl logs -n kube-system -l app=ingress-appgw
-   
-   # Check Application Gateway backend health
-   az network application-gateway show-backend-health \
-     --name <app-gateway-name> \
-     --resource-group <resource-group>
+   # Check ALB Controller pods
+   kubectl get pods -n azure-alb-system
+
+   # Check ALB Controller logs
+   kubectl logs -n azure-alb-system -l app=alb-controller
+
+   # Check Gateway status
+   kubectl get gateways -A
+
+   # Check HTTPRoute status
+   kubectl get httproutes -A
    ```
 
 2. **GPU nodes not ready**:
@@ -424,11 +437,17 @@ docker push $(terraform output -raw container_registry_login_server)/hello-world
 ### Useful Commands
 
 ```bash
-# Get all ingresses
+# Get all Gateway API resources
+kubectl get gateways,httproutes,referencegrants -A
+
+# Get all ingresses (legacy)
 kubectl get ingress --all-namespaces
 
-# Check Application Gateway configuration
-az network application-gateway list --output table
+# Check AGC status
+az network alb list --output table
+
+# Check ALB Controller status
+kubectl get pods -n azure-alb-system
 
 # Monitor resource usage
 kubectl top nodes
@@ -455,8 +474,11 @@ terraform destroy -var-file=environments/dev/terraform.tfvars
 
 ## Related Documentation
 
+- [Application Gateway for Containers Guide](./application-gateway-for-containers.md) - AGC architecture and configuration
 - [Environment Configuration Guide](./environment-configuration-guide.md) - Detailed variable reference and environment differences
 - [AKS Cluster Upgrade Guide](./aks-cluster-upgrade-guide.md) - Kubernetes version upgrades
 - [Security Guide](./security.md) - Security best practices and credential management
+- [Azure Workload Identity Guide](./azure-workload-identity.md) - Pod authentication with Azure services
+- [Azure GitHub OIDC Setup](./azure-github-oidc-setup.md) - CI/CD authentication setup
 - [Production Update Strategy](./production-update-strategy.md) - Safe production deployment procedures
 - [Troubleshooting Guide](./troubleshooting.md) - Common issues and solutions

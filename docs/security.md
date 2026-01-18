@@ -85,6 +85,68 @@ steps:
 
 For complete setup instructions, see [Azure GitHub OIDC Setup Guide](./azure-github-oidc-setup.md).
 
+#### **Azure Workload Identity for Kubernetes Pods (2026 Best Practice)**
+
+The platform uses **Azure Workload Identity** for Kubernetes pod authentication with Azure services. This replaces the deprecated AAD Pod Identity and is the recommended approach for AKS workloads.
+
+**How Workload Identity Works:**
+```
+Kubernetes Pod --> [ServiceAccount Token] --> AKS OIDC Issuer
+                                                    |
+                                                    v
+                                         [JWT with SA Claims]
+                                                    |
+                                                    v
+                    Azure AD validates token using Federated Credential
+                                                    |
+                                                    v
+                                         [Azure Access Token]
+                                                    |
+                                                    v
+                                         Azure Services
+```
+
+**Key Features:**
+- No secrets stored in Kubernetes
+- Short-lived tokens (~10 minutes)
+- Automatic token refresh by Azure SDK
+- Fine-grained access per ServiceAccount
+
+**Components Configured with Workload Identity:**
+
+| Component | ServiceAccount | Namespace |
+|-----------|---------------|-----------|
+| Prometheus | prometheus-kube-prometheus-prometheus | monitoring |
+| Grafana | prometheus-grafana | monitoring |
+| ArgoCD Server | argocd-server | argocd |
+| ArgoCD Controller | argocd-application-controller | argocd |
+| JupyterHub | hub | ai-tools |
+| MLflow | mlflow | ai-tools |
+| cert-manager | cert-manager | cert-manager |
+| ALB Controller | alb-controller-sa | azure-alb-system |
+
+**Pod Configuration:**
+```yaml
+# ServiceAccount with Workload Identity annotation
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: my-app
+  annotations:
+    azure.workload.identity/client-id: <managed-identity-client-id>
+---
+# Pod with Workload Identity label
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    azure.workload.identity/use: "true"
+spec:
+  serviceAccountName: my-app
+```
+
+For complete implementation details, see [Azure Workload Identity Guide](./azure-workload-identity.md).
+
 #### **RBAC Configuration**
 ```yaml
 # Kubernetes RBAC example
@@ -128,8 +190,9 @@ g, azure-ad-group:developers, role:developer
 VNet (10.0.0.0/16)
 ├── AKS Subnet (10.0.1.0/24)
 │   └── Network Security Group (AKS-NSG)
-├── App Gateway Subnet (10.0.2.0/24)
-│   └── Network Security Group (AppGW-NSG)
+├── AGC Subnet (10.0.2.0/24)
+│   └── Network Security Group (AGC-NSG)
+│   └── Delegation: Microsoft.ServiceNetworking/trafficControllers
 └── Private Endpoints Subnet (10.0.3.0/24)
     └── Network Security Group (PE-NSG)
 ```
@@ -159,17 +222,25 @@ All Azure services use private endpoints for secure connectivity:
 - **Storage Accounts**: Private endpoint for Terraform state
 - **Database Services**: Private endpoint for MLflow backend
 
-### **Application Gateway WAF**
+### **Application Gateway for Containers (AGC)**
 
-#### **Web Application Firewall Rules**
-```hcl
-resource "azurerm_web_application_firewall_policy" "main" {
-  name                = "${var.project_name}-waf-policy"
-  resource_group_name = azurerm_resource_group.main.name
-  location            = azurerm_resource_group.main.location
+#### **Traffic Management with Gateway API**
+AGC uses the Kubernetes Gateway API for traffic routing:
 
-  policy_settings {
-    enabled                     = true
+```yaml
+# Gateway resource for AGC
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: main-gateway
+  annotations:
+    alb.networking.azure.io/alb-id: <agc-resource-id>
+spec:
+  gatewayClassName: azure-alb-external
+  listeners:
+    - name: https
+      port: 443
+      protocol: HTTPS
     mode                       = "Prevention"
     request_body_check         = true
     file_upload_limit_in_mb    = 100

@@ -8,15 +8,15 @@ This guide explains the system architecture and design decisions for the Azure A
 graph TB
     Internet[Internet]
 
-    DevAppGW[Dev - Application Gateway]
+    DevAGC[Dev - AGC]
     DevAKS[Dev - AKS Cluster]
     DevACR[Dev - Container Registry]
 
-    StagingAppGW[Staging - Application Gateway]
+    StagingAGC[Staging - AGC]
     StagingAKS[Staging - AKS Cluster]
     StagingACR[Staging - Container Registry]
 
-    ProdAppGW[Prod - Application Gateway]
+    ProdAGC[Prod - AGC]
     ProdAKS[Prod - AKS Cluster]
     ProdACR[Prod - Container Registry]
 
@@ -24,21 +24,21 @@ graph TB
     SharedDNS[Azure DNS]
     SharedMonitoring[Log Analytics]
 
-    Internet --> DevAppGW
-    Internet --> StagingAppGW
-    Internet --> ProdAppGW
+    Internet --> DevAGC
+    Internet --> StagingAGC
+    Internet --> ProdAGC
 
-    DevAppGW --> DevAKS
-    StagingAppGW --> StagingAKS
-    ProdAppGW --> ProdAKS
+    DevAGC --> DevAKS
+    StagingAGC --> StagingAKS
+    ProdAGC --> ProdAKS
 
-    style DevAppGW fill:#c8e6c9,stroke:#2e7d32
+    style DevAGC fill:#c8e6c9,stroke:#2e7d32
     style DevAKS fill:#c8e6c9,stroke:#2e7d32
     style DevACR fill:#c8e6c9,stroke:#2e7d32
-    style StagingAppGW fill:#ffe0b2,stroke:#f57c00
+    style StagingAGC fill:#ffe0b2,stroke:#f57c00
     style StagingAKS fill:#ffe0b2,stroke:#f57c00
     style StagingACR fill:#ffe0b2,stroke:#f57c00
-    style ProdAppGW fill:#ffcdd2,stroke:#c62828
+    style ProdAGC fill:#ffcdd2,stroke:#c62828
     style ProdAKS fill:#ffcdd2,stroke:#c62828
     style ProdACR fill:#ffcdd2,stroke:#c62828
 ```
@@ -52,7 +52,8 @@ graph TB
 ```mermaid
 graph TB
     Internet[Internet]
-    AppGW[Application Gateway - WAF v2]
+    AGC[Application Gateway for Containers]
+    ALBController[ALB Controller]
 
     SystemPool[System Node Pool]
     UserPool[User Node Pool]
@@ -62,12 +63,14 @@ graph TB
     KVPE[Key Vault PE]
     StoragePE[Storage Account PE]
 
-    Internet --> AppGW
-    AppGW --> SystemPool
-    AppGW --> UserPool
-    AppGW --> AIPool
+    Internet --> AGC
+    AGC --> SystemPool
+    AGC --> UserPool
+    AGC --> AIPool
+    ALBController -.-> AGC
 
-    style AppGW fill:#fff3e0,stroke:#e65100
+    style AGC fill:#fff3e0,stroke:#e65100
+    style ALBController fill:#e1f5fe,stroke:#0277bd
     style SystemPool fill:#e8f5e8,stroke:#1b5e20
     style UserPool fill:#e8f5e8,stroke:#1b5e20
     style AIPool fill:#f8bbd9,stroke:#c2185b
@@ -92,7 +95,7 @@ graph TB
 - **Azure Active Directory**: Identity and access management
 - **Network Security Groups**: Traffic filtering
 - **Private Endpoints**: Secure connectivity
-- **Application Gateway WAF**: Web application firewall
+- **Application Gateway for Containers**: Cloud-native load balancing with Gateway API
 
 ### Platform Layer (Helm-Managed)
 

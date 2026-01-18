@@ -142,7 +142,8 @@ resource "kubectl_manifest" "letsencrypt_staging" {
           {
             http01 = {
               ingress = {
-                class = "azure/application-gateway"
+                # AGC: Use azure-alb-external for HTTP01 challenges
+                ingressClassName = "azure-alb-external"
               }
             }
           }
@@ -175,7 +176,8 @@ resource "kubectl_manifest" "letsencrypt_prod" {
           {
             http01 = {
               ingress = {
-                class = "azure/application-gateway"
+                # AGC: Use azure-alb-external for HTTP01 challenges
+                ingressClassName = "azure-alb-external"
               }
             }
           }

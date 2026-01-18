@@ -7,20 +7,20 @@ This guide explains how to integrate Let's Encrypt with the Azure AKS GitOps pla
 The project supports automatic SSL certificate provisioning using:
 - **cert-manager** - Kubernetes certificate management controller
 - **Let's Encrypt** - Free, automated certificate authority
-- **Azure Application Gateway** - SSL termination and ingress
+- **Application Gateway for Containers (AGC)** - Cloud-native load balancing with Gateway API
 - **Azure Key Vault** - Secure certificate storage
 
 ## Integration Options
 
-### Option 1: cert-manager with Application Gateway (Recommended)
+### Option 1: cert-manager with AGC (Recommended)
 
-This approach uses cert-manager to automatically provision Let's Encrypt certificates and integrates them with Azure Application Gateway.
+This approach uses cert-manager to automatically provision Let's Encrypt certificates and integrates them with Application Gateway for Containers using the Gateway API.
 
 **Benefits:**
 - Automatic certificate renewal
-- Azure-native integration
-- Secure storage in Key Vault
-- Works with existing Application Gateway setup
+- Cloud-native Gateway API integration
+- Secure storage in Kubernetes secrets
+- Works with AGC and HTTPRoute resources
 
 ### Option 2: External DNS + cert-manager
 
@@ -61,15 +61,18 @@ This creates:
 
 ### Step 3: Configure DNS
 
-Point your domain to the Application Gateway public IP:
+Point your domain to the AGC frontend FQDN:
 
 ```bash
-# Get the Application Gateway IP
-terraform output application_gateway_public_ip
+# Get the AGC frontend FQDN
+terraform output agc_frontend_fqdn
 
-# Create DNS A records
-yourdomain.com        -> <APP_GATEWAY_IP>
-*.yourdomain.com      -> <APP_GATEWAY_IP>
+# Create DNS CNAME records (recommended)
+yourdomain.com        CNAME <AGC_FRONTEND_FQDN>
+*.yourdomain.com      CNAME <AGC_FRONTEND_FQDN>
+
+# Or create A records by first resolving the FQDN
+nslookup $(terraform output -raw agc_frontend_fqdn)
 ```
 
 ### Step 4: Request Certificates
@@ -108,37 +111,68 @@ spec:
     - grafana.yourdomain.com
 ```
 
-### Step 5: Update Ingress Resources
+### Step 5: Update HTTPRoute Resources
 
-Update your ingress resources to use the certificates:
+Update your HTTPRoute resources to use the certificates:
 
 ```yaml
-# Example: ArgoCD ingress with Let's Encrypt
-apiVersion: networking.k8s.io/v1
-kind: Ingress
+# Example: ArgoCD HTTPRoute with Let's Encrypt certificate
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
 metadata:
-  name: argocd-server-ingress
+  name: argocd-server
   namespace: argocd
-  annotations:
-    kubernetes.io/ingress.class: azure/application-gateway
-    appgw.ingress.kubernetes.io/ssl-redirect: "true"
-    cert-manager.io/cluster-issuer: letsencrypt-staging
 spec:
-  tls:
-    - hosts:
-        - argocd.yourdomain.com
-      secretName: argocd-tls
+  parentRefs:
+    - name: main-gateway
+      namespace: azure-alb-system
+      sectionName: https
+  hostnames:
+    - argocd.yourdomain.com
   rules:
-    - host: argocd.yourdomain.com
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: argocd-server
-                port:
-                  number: 80
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: argocd-server
+          port: 80
+---
+# Certificate for the Gateway
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: argocd-tls
+  namespace: azure-alb-system
+spec:
+  secretName: argocd-tls
+  issuerRef:
+    name: letsencrypt-staging
+    kind: ClusterIssuer
+  dnsNames:
+    - argocd.yourdomain.com
+```
+
+Update the Gateway to reference the certificate:
+```yaml
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: main-gateway
+  namespace: azure-alb-system
+spec:
+  gatewayClassName: azure-alb-external
+  listeners:
+    - name: https
+      protocol: HTTPS
+      port: 443
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - name: argocd-tls
+      allowedRoutes:
+        namespaces:
+          from: All
 ```
 
 ## Testing and Validation
@@ -259,13 +293,14 @@ dig yourdomain.com
 - Always test with staging first
 - Use wildcard certificates to reduce certificate count
 
-**Application Gateway Integration**:
+**AGC Integration**:
 ```bash
-# Check AGIC logs
-kubectl logs -n kube-system -l app=ingress-appgw
+# Check ALB Controller logs
+kubectl logs -n azure-alb-system -l app=alb-controller
 
-# Verify ingress configuration
-kubectl get ingress -A
+# Verify Gateway and HTTPRoute configuration
+kubectl get gateways -A
+kubectl get httproutes -A
 ```
 
 ### Debugging Commands
@@ -303,7 +338,7 @@ kubectl logs -n cert-manager deployment/cert-manager-cainjector
 4. **Automate everything** - Let cert-manager handle the lifecycle
 
 ### Performance
-1. **Cache certificates** - Application Gateway caches certificates
+1. **Cache certificates** - AGC handles TLS termination efficiently
 2. **Use HTTP01 for simple cases** - Faster than DNS01 for single domains
 3. **Use DNS01 for wildcards** - Required for wildcard certificates
 
@@ -334,11 +369,11 @@ kubectl logs -n cert-manager deployment/cert-manager-cainjector
 - **Let's Encrypt**: Free certificates
 - **cert-manager**: No additional cost (runs on existing cluster)
 - **Azure Key Vault**: Minimal cost for certificate storage
-- **Application Gateway**: Existing cost, no additional charges for SSL
+- **Application Gateway for Containers**: Existing cost, no additional charges for SSL
 
 ## Support and Resources
 
 - [cert-manager Documentation](https://cert-manager.io/docs/)
 - [Let's Encrypt Documentation](https://letsencrypt.org/docs/)
-- [Azure Application Gateway AGIC](https://docs.microsoft.com/en-us/azure/application-gateway/ingress-controller-overview)
-- [Kubernetes Ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/)
+- [Application Gateway for Containers Documentation](https://learn.microsoft.com/en-us/azure/application-gateway/for-containers/overview)
+- [Kubernetes Gateway API](https://gateway-api.sigs.k8s.io/)

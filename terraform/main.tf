@@ -28,7 +28,7 @@ module "networking" {
   project_name                           = var.project_name
   vnet_address_space                     = var.vnet_address_space
   aks_subnet_address_prefix              = var.aks_subnet_address_prefix
-  app_gateway_subnet_address_prefix      = var.app_gateway_subnet_address_prefix
+  agc_subnet_address_prefix              = var.agc_subnet_address_prefix
   private_endpoint_subnet_address_prefix = var.private_endpoint_subnet_address_prefix
   tags                                   = local.common_tags
 }
@@ -54,8 +54,17 @@ module "security" {
   ssl_certificate_subject     = var.ssl_certificate_subject
   ssl_certificate_dns_names   = var.ssl_certificate_dns_names
 
-  # cert-manager configuration
+  # Component identity enablement
   enable_cert_manager = var.enable_cert_manager
+  enable_monitoring   = var.enable_monitoring
+  enable_gitops       = var.enable_argocd
+  enable_ai_tools     = var.enable_ai_tools
+
+  # Workload Identity configuration
+  # Note: aks_oidc_issuer_url is set to null initially
+  # Federated credentials are created separately after AKS is provisioned
+  enable_workload_identity = true
+  aks_oidc_issuer_url      = null # Set by workload_identity module below
 
   tags = local.common_tags
 
@@ -147,10 +156,10 @@ module "aks" {
   ]
 }
 
-# Application Gateway with AGIC
-module "application_gateway" {
-  source = "./modules/application_gateway"
-  count  = var.enable_application_gateway ? 1 : 0
+# Application Gateway for Containers (AGC)
+module "agc" {
+  source = "./modules/agc"
+  count  = var.enable_agc ? 1 : 0
 
   resource_group_name = azurerm_resource_group.main.name
   location            = azurerm_resource_group.main.location
@@ -158,18 +167,19 @@ module "application_gateway" {
   project_name        = var.project_name
 
   # Networking
-  subnet_id = module.networking.app_gateway_subnet_id
-
-  # Security
-  key_vault_id = module.security.key_vault_id
-
-  # AKS integration
-  aks_cluster_id  = module.aks.cluster_id
+  subnet_id       = module.networking.agc_subnet_id
   subscription_id = data.azurerm_client_config.current.subscription_id
 
-  # SSL certificate (if demo certificate is created)
-  ssl_certificate_name                = var.create_demo_ssl_certificate ? module.security.ssl_certificate_name : null
-  ssl_certificate_key_vault_secret_id = var.create_demo_ssl_certificate ? module.security.ssl_certificate_secret_id : null
+  # AKS OIDC for workload identity
+  aks_oidc_issuer_url = module.aks.oidc_issuer_url
+
+  # Gateway configuration
+  create_default_gateway = var.create_default_gateway
+  gateway_namespace      = "default"
+  enable_https           = var.enable_agc_https
+
+  # TLS configuration (for cert-manager integration)
+  tls_certificate_refs = var.agc_tls_certificate_refs
 
   tags = local.common_tags
 
@@ -201,7 +211,7 @@ module "monitoring" {
 
   # Grafana configuration
   grafana_admin_password = var.grafana_admin_password
-  enable_grafana_ingress = var.enable_application_gateway
+  enable_grafana_ingress = var.enable_agc
   grafana_ingress_hosts  = ["grafana.${var.ssl_certificate_subject}"]
   grafana_storage_size   = var.grafana_storage_size
 
@@ -215,7 +225,15 @@ module "monitoring" {
   # Loki configuration
   loki_storage_size = var.loki_storage_size
 
-  depends_on = [module.aks, module.application_gateway]
+  # Azure Workload Identity
+  enable_workload_identity    = true
+  workload_identity_client_id = module.security.monitoring_identity_client_id
+
+  # AGC Gateway reference for HTTPRoute
+  agc_gateway_name      = var.enable_agc ? module.agc[0].gateway_name : null
+  agc_gateway_namespace = var.enable_agc ? module.agc[0].gateway_namespace : null
+
+  depends_on = [module.aks, module.agc]
 }
 
 # GitOps Module (ArgoCD)
@@ -227,9 +245,17 @@ module "gitops" {
   cluster_name     = local.cluster_name
   argocd_namespace = var.argocd_namespace
   argocd_domain    = "argocd.${var.ssl_certificate_subject}"
-  enable_ingress   = var.enable_application_gateway
+  enable_ingress   = var.enable_agc
 
-  depends_on = [module.aks, module.application_gateway]
+  # Azure Workload Identity
+  enable_workload_identity    = true
+  workload_identity_client_id = module.security.gitops_identity_client_id
+
+  # AGC Gateway reference for HTTPRoute
+  agc_gateway_name      = var.enable_agc ? module.agc[0].gateway_name : null
+  agc_gateway_namespace = var.enable_agc ? module.agc[0].gateway_namespace : null
+
+  depends_on = [module.aks, module.agc]
 }
 
 # AI Tools Module
@@ -250,5 +276,13 @@ module "ai_tools" {
   jupyter_ingress_hosts = ["jupyter.${var.ssl_certificate_subject}"]
   mlflow_ingress_hosts  = ["mlflow.${var.ssl_certificate_subject}"]
 
-  depends_on = [module.aks, module.application_gateway]
+  # Azure Workload Identity
+  enable_workload_identity    = true
+  workload_identity_client_id = module.security.ai_tools_identity_client_id
+
+  # AGC Gateway reference for HTTPRoute
+  agc_gateway_name      = var.enable_agc ? module.agc[0].gateway_name : null
+  agc_gateway_namespace = var.enable_agc ? module.agc[0].gateway_namespace : null
+
+  depends_on = [module.aks, module.agc]
 }

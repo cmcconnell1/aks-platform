@@ -28,8 +28,8 @@ variable "aks_subnet_address_prefix" {
   type        = string
 }
 
-variable "app_gateway_subnet_address_prefix" {
-  description = "Address prefix for Application Gateway subnet"
+variable "agc_subnet_address_prefix" {
+  description = "Address prefix for Application Gateway for Containers (AGC) subnet"
   type        = string
 }
 

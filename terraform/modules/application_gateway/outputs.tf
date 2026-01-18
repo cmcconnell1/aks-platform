@@ -57,3 +57,14 @@ output "https_listener_id" {
   description = "ID of the HTTPS listener"
   value       = var.ssl_certificate_name != null ? "${azurerm_application_gateway.main.id}/httpListeners/httpsListener" : null
 }
+
+# Alias for workload identity configuration
+output "agic_identity_id" {
+  description = "ID of the AGIC user assigned identity (alias for user_assigned_identity_id)"
+  value       = azurerm_user_assigned_identity.app_gateway.id
+}
+
+output "agic_identity_client_id" {
+  description = "Client ID of the AGIC user assigned identity"
+  value       = azurerm_user_assigned_identity.app_gateway.client_id
+}

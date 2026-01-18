@@ -6,6 +6,12 @@ resource "azurerm_kubernetes_cluster" "main" {
   dns_prefix          = "${var.project_name}-${var.environment}"
   kubernetes_version  = var.kubernetes_version
 
+  # Azure Workload Identity (2026 best practice)
+  # Enables OIDC federation between Kubernetes ServiceAccounts and Azure AD
+  # Required for secure, secretless authentication from pods to Azure services
+  oidc_issuer_enabled       = true
+  workload_identity_enabled = true
+
   # Private cluster configuration
   private_cluster_enabled         = var.enable_private_cluster
   private_dns_zone_id             = var.enable_private_cluster ? "System" : null

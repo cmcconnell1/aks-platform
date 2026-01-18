@@ -18,14 +18,14 @@ output "aks_subnet_name" {
   value       = azurerm_subnet.aks.name
 }
 
-output "app_gateway_subnet_id" {
-  description = "ID of the Application Gateway subnet"
-  value       = azurerm_subnet.app_gateway.id
+output "agc_subnet_id" {
+  description = "ID of the Application Gateway for Containers (AGC) subnet"
+  value       = azurerm_subnet.agc.id
 }
 
-output "app_gateway_subnet_name" {
-  description = "Name of the Application Gateway subnet"
-  value       = azurerm_subnet.app_gateway.name
+output "agc_subnet_name" {
+  description = "Name of the Application Gateway for Containers (AGC) subnet"
+  value       = azurerm_subnet.agc.name
 }
 
 output "private_endpoints_subnet_id" {
@@ -43,7 +43,7 @@ output "aks_nsg_id" {
   value       = azurerm_network_security_group.aks.id
 }
 
-output "app_gateway_nsg_id" {
-  description = "ID of the Application Gateway network security group"
-  value       = azurerm_network_security_group.app_gateway.id
+output "agc_nsg_id" {
+  description = "ID of the Application Gateway for Containers (AGC) network security group"
+  value       = azurerm_network_security_group.agc.id
 }

@@ -121,7 +121,7 @@ confirm_cleanup() {
     echo
     echo "This script will PERMANENTLY DELETE the following:"
     echo "  - All AKS clusters and workloads"
-    echo "  - Application Gateway and networking"
+    echo "  - Application Gateway for Containers (AGC) and networking"
     echo "  - Key Vault and all certificates/secrets"
     echo "  - Storage accounts and Terraform state"
     echo "  - Service principals and Azure AD applications"

@@ -99,7 +99,7 @@ terraform/
 | `create_demo_ssl_certificate` | true | true | false | Demo certs |
 | `enable_cert_manager` | false | false | true | Let's Encrypt |
 | `enable_letsencrypt_prod` | false | false | true | Production certs |
-| `app_gateway_sku_capacity` | 2 | 2 | 3 | WAF instances |
+| `enable_agc` | true | true | true | AGC enabled |
 
 ### Upgrade Configuration
 

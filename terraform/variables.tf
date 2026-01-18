@@ -40,8 +40,8 @@ variable "aks_subnet_address_prefix" {
   default     = "10.0.1.0/24"
 }
 
-variable "app_gateway_subnet_address_prefix" {
-  description = "Address prefix for Application Gateway subnet"
+variable "agc_subnet_address_prefix" {
+  description = "Address prefix for Application Gateway for Containers (AGC) subnet"
   type        = string
   default     = "10.0.2.0/24"
 }
@@ -140,11 +140,32 @@ variable "ssl_certificate_dns_names" {
   default     = ["aks-platform.local", "*.aks-platform.local"]
 }
 
-# Application Gateway variables
-variable "enable_application_gateway" {
-  description = "Enable Application Gateway with AGIC"
+# Application Gateway for Containers (AGC) variables
+variable "enable_agc" {
+  description = "Enable Application Gateway for Containers (AGC) with ALB Controller"
   type        = bool
   default     = true
+}
+
+variable "create_default_gateway" {
+  description = "Create a default Gateway resource for AGC"
+  type        = bool
+  default     = true
+}
+
+variable "enable_agc_https" {
+  description = "Enable HTTPS listener on AGC Gateway"
+  type        = bool
+  default     = true
+}
+
+variable "agc_tls_certificate_refs" {
+  description = "TLS certificate references for AGC HTTPS listener (cert-manager secrets)"
+  type = list(object({
+    name      = string
+    namespace = optional(string)
+  }))
+  default = []
 }
 
 # Let's Encrypt / cert-manager variables
@@ -411,23 +432,17 @@ variable "mlflow_minio_password" {
 }
 
 # =============================================================================
-# Application Gateway Configuration
+# Application Gateway for Containers (AGC) Configuration
 # =============================================================================
 
-variable "app_gateway_sku_tier" {
-  description = "SKU tier for Application Gateway"
+variable "alb_controller_version" {
+  description = "Version of the ALB Controller Helm chart"
   type        = string
-  default     = "WAF_v2"
+  default     = "1.3.7"
 }
 
-variable "app_gateway_sku_capacity" {
-  description = "SKU capacity for Application Gateway"
-  type        = number
-  default     = 2
-}
-
-variable "app_gateway_zones" {
-  description = "Availability zones for Application Gateway"
-  type        = list(string)
-  default     = ["1", "2", "3"]
+variable "gateway_api_version" {
+  description = "Version of the Gateway API Helm chart"
+  type        = string
+  default     = "1.2.0"
 }

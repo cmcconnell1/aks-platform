@@ -18,6 +18,46 @@ resource "azurerm_user_assigned_identity" "cert_manager" {
   tags = var.tags
 }
 
+# User Assigned Identity for monitoring stack (Prometheus, Grafana)
+resource "azurerm_user_assigned_identity" "monitoring" {
+  count = var.enable_monitoring ? 1 : 0
+
+  name                = "${var.project_name}-${var.environment}-monitoring-identity"
+  resource_group_name = var.resource_group_name
+  location            = var.location
+
+  tags = var.tags
+}
+
+# User Assigned Identity for GitOps (ArgoCD)
+resource "azurerm_user_assigned_identity" "gitops" {
+  count = var.enable_gitops ? 1 : 0
+
+  name                = "${var.project_name}-${var.environment}-gitops-identity"
+  resource_group_name = var.resource_group_name
+  location            = var.location
+
+  tags = var.tags
+}
+
+# User Assigned Identity for AI Tools (JupyterHub, MLflow)
+resource "azurerm_user_assigned_identity" "ai_tools" {
+  count = var.enable_ai_tools ? 1 : 0
+
+  name                = "${var.project_name}-${var.environment}-ai-tools-identity"
+  resource_group_name = var.resource_group_name
+  location            = var.location
+
+  tags = var.tags
+}
+
+# =============================================================================
+# Azure Workload Identity - Federated Credentials
+# Note: Federated credentials are created in the root module (workload_identity.tf)
+# after the AKS cluster is provisioned, as they require the OIDC issuer URL.
+# This module creates only the managed identities.
+# =============================================================================
+
 # Key Vault for storing secrets and certificates
 resource "azurerm_key_vault" "main" {
   name                = "${var.project_name}-${var.environment}-kv-${random_string.suffix.result}"

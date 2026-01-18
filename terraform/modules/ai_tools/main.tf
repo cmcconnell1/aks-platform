@@ -1,3 +1,21 @@
+# Local for workload identity configuration
+locals {
+  workload_identity_enabled = var.enable_workload_identity && var.workload_identity_client_id != null
+
+  # ServiceAccount annotations for Azure Workload Identity
+  workload_identity_annotations = local.workload_identity_enabled ? {
+    "azure.workload.identity/client-id" = var.workload_identity_client_id
+  } : {}
+
+  # Pod labels for Azure Workload Identity
+  workload_identity_labels = local.workload_identity_enabled ? {
+    "azure.workload.identity/use" = "true"
+  } : {}
+
+  # AGC configuration
+  agc_enabled = var.agc_gateway_name != null
+}
+
 # Random passwords for secure defaults
 resource "random_password" "jupyter_admin_password" {
   length  = 16
@@ -32,6 +50,12 @@ resource "helm_release" "jupyterhub" {
   values = [
     yamlencode({
       hub = {
+        # Azure Workload Identity
+        serviceAccount = {
+          annotations = local.workload_identity_annotations
+        }
+        extraLabels = local.workload_identity_labels
+
         config = {
           JupyterHub = {
             admin_access        = true
@@ -405,4 +429,96 @@ resource "helm_release" "kubeflow" {
   ]
 
   depends_on = [kubernetes_namespace.ai_tools]
+}
+
+# =============================================================================
+# Application Gateway for Containers (AGC) HTTPRoutes for AI Tools
+# =============================================================================
+# HTTPRoute provides routing configuration for AGC Gateway API
+# This is the preferred routing method for AGC (vs traditional Ingress)
+
+# HTTPRoute for JupyterHub
+resource "kubernetes_manifest" "jupyterhub_httproute" {
+  count = local.agc_enabled && var.enable_jupyter_hub && var.enable_jupyter_ingress ? 1 : 0
+
+  manifest = {
+    apiVersion = "gateway.networking.k8s.io/v1"
+    kind       = "HTTPRoute"
+    metadata = {
+      name      = "jupyterhub"
+      namespace = kubernetes_namespace.ai_tools.metadata[0].name
+    }
+    spec = {
+      parentRefs = [
+        {
+          name      = var.agc_gateway_name
+          namespace = var.agc_gateway_namespace
+        }
+      ]
+      hostnames = var.jupyter_ingress_hosts
+      rules = [
+        {
+          matches = [
+            {
+              path = {
+                type  = "PathPrefix"
+                value = "/"
+              }
+            }
+          ]
+          backendRefs = [
+            {
+              name = "proxy-public"
+              port = 80
+            }
+          ]
+        }
+      ]
+    }
+  }
+
+  depends_on = [helm_release.jupyterhub]
+}
+
+# HTTPRoute for MLflow
+resource "kubernetes_manifest" "mlflow_httproute" {
+  count = local.agc_enabled && var.enable_mlflow && var.enable_mlflow_ingress ? 1 : 0
+
+  manifest = {
+    apiVersion = "gateway.networking.k8s.io/v1"
+    kind       = "HTTPRoute"
+    metadata = {
+      name      = "mlflow"
+      namespace = kubernetes_namespace.ai_tools.metadata[0].name
+    }
+    spec = {
+      parentRefs = [
+        {
+          name      = var.agc_gateway_name
+          namespace = var.agc_gateway_namespace
+        }
+      ]
+      hostnames = var.mlflow_ingress_hosts
+      rules = [
+        {
+          matches = [
+            {
+              path = {
+                type  = "PathPrefix"
+                value = "/"
+              }
+            }
+          ]
+          backendRefs = [
+            {
+              name = "mlflow"
+              port = 5000
+            }
+          ]
+        }
+      ]
+    }
+  }
+
+  depends_on = [helm_release.mlflow]
 }

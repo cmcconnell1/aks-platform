@@ -32,12 +32,10 @@ variable "enable_grafana_ingress" {
 }
 
 variable "grafana_ingress_annotations" {
-  description = "Annotations for Grafana ingress"
+  description = "Annotations for Grafana ingress (AGC compatible)"
   type        = map(string)
   default = {
-    "kubernetes.io/ingress.class"                  = "azure/application-gateway"
-    "appgw.ingress.kubernetes.io/ssl-redirect"     = "true"
-    "appgw.ingress.kubernetes.io/backend-protocol" = "http"
+    "kubernetes.io/ingress.class" = "azure-alb-external"
   }
 }
 
@@ -93,4 +91,36 @@ variable "enable_jaeger" {
   description = "Enable Jaeger for distributed tracing"
   type        = bool
   default     = false
+}
+
+# =============================================================================
+# Azure Workload Identity Configuration
+# =============================================================================
+
+variable "workload_identity_client_id" {
+  description = "Client ID of the managed identity for Azure Workload Identity"
+  type        = string
+  default     = null
+}
+
+variable "enable_workload_identity" {
+  description = "Enable Azure Workload Identity for monitoring components"
+  type        = bool
+  default     = true
+}
+
+# =============================================================================
+# Application Gateway for Containers (AGC) Configuration
+# =============================================================================
+
+variable "agc_gateway_name" {
+  description = "Name of the AGC Gateway resource for HTTPRoute"
+  type        = string
+  default     = null
+}
+
+variable "agc_gateway_namespace" {
+  description = "Namespace of the AGC Gateway resource"
+  type        = string
+  default     = "default"
 }

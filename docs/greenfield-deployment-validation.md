@@ -201,13 +201,13 @@ ssl_certificate_dns_names = ["yourdomain.com", "*.yourdomain.com"]
 **Requirements:**
 - Certificate authority access
 - Manual certificate renewal process
-- Azure Key Vault for storage
+- Kubernetes secrets for storage
 
 **Configuration:**
 ```hcl
 create_demo_ssl_certificate = false
-# Import existing certificate to Key Vault
-# Configure Application Gateway to use Key Vault certificate
+# Import existing certificate to Kubernetes secrets
+# Configure Gateway TLS to use certificate secrets
 ```
 
 ### Option 3: Self-Signed Certificates (Development Only)
@@ -235,7 +235,7 @@ create_demo_ssl_certificate = true
 1. Azure service principal creation
 2. Storage account for Terraform state
 3. AKS cluster provisioning
-4. Application Gateway configuration
+4. Application Gateway for Containers configuration
 5. Certificate management setup
 6. ArgoCD installation
 7. Application deployment
@@ -259,8 +259,8 @@ az role assignment list --assignee $ARM_CLIENT_ID
 # Verify AKS cluster
 az aks show --resource-group rg-your-project-dev --name aks-your-project-dev
 
-# Verify Application Gateway
-az network application-gateway show --resource-group rg-your-project-dev --name agw-your-project-dev
+# Verify Application Gateway for Containers
+az network alb show --resource-group rg-your-project-dev --name alb-your-project-dev
 
 # Verify Key Vault
 az keyvault show --name kv-your-project-dev
@@ -281,7 +281,7 @@ kubectl get certificates -A
 ## Common Issues and Solutions
 
 ### Azure Quota Issues
-**Problem**: Insufficient quota for AKS nodes or Application Gateway
+**Problem**: Insufficient quota for AKS nodes or AGC
 **Solution**: Request quota increase in Azure portal
 
 ### DNS Resolution Issues
@@ -290,7 +290,7 @@ kubectl get certificates -A
 
 ### Certificate Issues
 **Problem**: SSL certificates not working
-**Solution**: Check Key Vault permissions and certificate format
+**Solution**: Check cert-manager certificates and Gateway TLS configuration
 
 ### GitHub Actions Failures
 **Problem**: Pipeline fails with authentication errors
@@ -300,19 +300,19 @@ kubectl get certificates -A
 
 ### Minimum Viable Deployment
 - **AKS cluster**: ~$150/month
-- **Application Gateway**: ~$50/month
+- **Application Gateway for Containers**: ~$50/month
 - **Storage and networking**: ~$20/month
 - **Total**: ~$220/month
 
 ### Production-Ready Deployment
 - **AKS cluster with HA**: ~$400/month
-- **Application Gateway with WAF**: ~$100/month
+- **Application Gateway for Containers**: ~$100/month
 - **Monitoring and logging**: ~$50/month
 - **Total**: ~$550/month
 
 ## Next Steps After Deployment
 
-1. **Configure DNS** - Point your domain to Application Gateway IP
+1. **Configure DNS** - Point your domain to AGC frontend FQDN
 2. **Set up monitoring alerts** - Configure Grafana dashboards and alerts
 3. **Deploy applications** - Use ArgoCD to deploy your applications
 4. **Security hardening** - Review and implement additional security measures

@@ -62,7 +62,7 @@ az ad sp delete --id $(az ad sp list --display-name permission-test-sp --query "
 **Estimated Monthly Costs** (East US region):
 - **Development Environment**: ~$200-400/month
   - AKS cluster (2 Standard_D2s_v3 nodes): ~$140
-  - Application Gateway: ~$25
+  - Application Gateway for Containers: ~$25
   - Storage and networking: ~$20-50
   - AI/ML node pool (if enabled): ~$200-400
 
@@ -179,7 +179,7 @@ location = "East US"  # Choose your preferred region
 # Network configuration (default is fine for greenfield)
 vnet_address_space = ["10.0.0.0/16"]
 aks_subnet_address_prefix = "10.0.1.0/24"
-app_gateway_subnet_address_prefix = "10.0.2.0/24"
+agc_subnet_address_prefix = "10.0.2.0/24"
 
 # Domain configuration (choose one option)
 
@@ -240,8 +240,8 @@ az aks get-credentials \
 kubectl get nodes
 kubectl get pods --all-namespaces
 
-# Get Application Gateway IP
-terraform output application_gateway_public_ip
+# Get AGC frontend FQDN
+terraform output agc_frontend_fqdn
 ```
 
 ### Access Platform Services

@@ -94,3 +94,82 @@ output "private_dns_zone_id" {
   description = "ID of the private DNS zone"
   value       = var.enable_private_endpoint ? azurerm_private_dns_zone.key_vault[0].id : null
 }
+
+# =============================================================================
+# Azure Workload Identity Outputs
+# =============================================================================
+
+output "monitoring_identity_id" {
+  description = "ID of the monitoring user assigned managed identity"
+  value       = var.enable_monitoring ? azurerm_user_assigned_identity.monitoring[0].id : null
+}
+
+output "monitoring_identity_client_id" {
+  description = "Client ID of the monitoring user assigned managed identity"
+  value       = var.enable_monitoring ? azurerm_user_assigned_identity.monitoring[0].client_id : null
+}
+
+output "monitoring_identity_principal_id" {
+  description = "Principal ID of the monitoring user assigned managed identity"
+  value       = var.enable_monitoring ? azurerm_user_assigned_identity.monitoring[0].principal_id : null
+}
+
+output "gitops_identity_id" {
+  description = "ID of the GitOps user assigned managed identity"
+  value       = var.enable_gitops ? azurerm_user_assigned_identity.gitops[0].id : null
+}
+
+output "gitops_identity_client_id" {
+  description = "Client ID of the GitOps user assigned managed identity"
+  value       = var.enable_gitops ? azurerm_user_assigned_identity.gitops[0].client_id : null
+}
+
+output "gitops_identity_principal_id" {
+  description = "Principal ID of the GitOps user assigned managed identity"
+  value       = var.enable_gitops ? azurerm_user_assigned_identity.gitops[0].principal_id : null
+}
+
+output "ai_tools_identity_id" {
+  description = "ID of the AI tools user assigned managed identity"
+  value       = var.enable_ai_tools ? azurerm_user_assigned_identity.ai_tools[0].id : null
+}
+
+output "ai_tools_identity_client_id" {
+  description = "Client ID of the AI tools user assigned managed identity"
+  value       = var.enable_ai_tools ? azurerm_user_assigned_identity.ai_tools[0].client_id : null
+}
+
+output "ai_tools_identity_principal_id" {
+  description = "Principal ID of the AI tools user assigned managed identity"
+  value       = var.enable_ai_tools ? azurerm_user_assigned_identity.ai_tools[0].principal_id : null
+}
+
+# Summary of all workload identity configurations
+output "workload_identity_config" {
+  description = "Summary of Workload Identity configuration for all components"
+  value = {
+    cert_manager = var.enable_cert_manager ? {
+      client_id         = azurerm_user_assigned_identity.cert_manager[0].client_id
+      service_account   = "system:serviceaccount:cert-manager:cert-manager"
+      federated_enabled = var.enable_workload_identity && var.aks_oidc_issuer_url != null
+    } : null
+
+    monitoring = var.enable_monitoring ? {
+      client_id         = azurerm_user_assigned_identity.monitoring[0].client_id
+      service_accounts  = ["system:serviceaccount:monitoring:prometheus-grafana", "system:serviceaccount:monitoring:prometheus-kube-prometheus-prometheus"]
+      federated_enabled = var.enable_workload_identity && var.aks_oidc_issuer_url != null
+    } : null
+
+    gitops = var.enable_gitops ? {
+      client_id         = azurerm_user_assigned_identity.gitops[0].client_id
+      service_accounts  = ["system:serviceaccount:argocd:argocd-server", "system:serviceaccount:argocd:argocd-application-controller"]
+      federated_enabled = var.enable_workload_identity && var.aks_oidc_issuer_url != null
+    } : null
+
+    ai_tools = var.enable_ai_tools ? {
+      client_id         = azurerm_user_assigned_identity.ai_tools[0].client_id
+      service_accounts  = ["system:serviceaccount:ai-tools:jupyterhub-hub", "system:serviceaccount:ai-tools:mlflow"]
+      federated_enabled = var.enable_workload_identity && var.aks_oidc_issuer_url != null
+    } : null
+  }
+}

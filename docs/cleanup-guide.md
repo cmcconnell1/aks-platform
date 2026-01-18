@@ -146,8 +146,8 @@ az network dns record-set a delete --resource-group your-dns-rg --zone-name your
 graph TD
     Apps[1. Applications] --> Platform[2. Platform Services]
     Platform --> AKS[3. AKS Cluster]
-    AKS --> AppGW[4. Application Gateway]
-    AppGW --> Network[5. Networking]
+    AKS --> AGC[4. Application Gateway for Containers]
+    AGC --> Network[5. Networking]
     Network --> Storage[6. Storage Accounts]
     Storage --> KeyVault[7. Key Vault]
     KeyVault --> RG[8. Resource Groups]
@@ -156,7 +156,7 @@ graph TD
     style Apps fill:#ffcdd2,stroke:#c62828
     style Platform fill:#ffe0b2,stroke:#f57c00
     style AKS fill:#fff3e0,stroke:#e65100
-    style AppGW fill:#e8f5e8,stroke:#1b5e20
+    style AGC fill:#e8f5e8,stroke:#1b5e20
     style Network fill:#e3f2fd,stroke:#0d47a1
     style Storage fill:#f3e5f5,stroke:#4a148c
     style KeyVault fill:#fff8e1,stroke:#ff8f00
@@ -199,10 +199,16 @@ kubectl delete namespace cert-manager
 az aks delete --resource-group rg-your-project-dev --name aks-your-project-dev --yes --no-wait
 ```
 
-#### Step 4: Remove Application Gateway
+#### Step 4: Remove Application Gateway for Containers
 ```bash
-# Delete Application Gateway
-az network application-gateway delete --resource-group rg-your-project-dev --name agw-your-project-dev
+# Delete AGC Association
+az network alb association delete --resource-group rg-your-project-dev --alb-name alb-your-project-dev --association-name agc-association
+
+# Delete AGC Frontend
+az network alb frontend delete --resource-group rg-your-project-dev --alb-name alb-your-project-dev --frontend-name agc-frontend
+
+# Delete AGC
+az network alb delete --resource-group rg-your-project-dev --name alb-your-project-dev
 ```
 
 #### Step 5: Remove Networking
@@ -235,13 +241,16 @@ az vmss list --resource-group MC_rg-your-project-dev_aks-your-project-dev_eastus
 az vmss delete --resource-group MC_rg-your-project-dev_aks-your-project-dev_eastus --name aks-nodepool1-vmss
 ```
 
-#### Application Gateway Won't Delete
+#### Application Gateway for Containers Won't Delete
 ```bash
-# Check for remaining backend pools or rules
-az network application-gateway show --resource-group rg-your-project-dev --name agw-your-project-dev
+# Check AGC status
+az network alb show --resource-group rg-your-project-dev --name alb-your-project-dev
+
+# Delete associations first
+az network alb association list --resource-group rg-your-project-dev --alb-name alb-your-project-dev
 
 # Force delete
-az network application-gateway delete --resource-group rg-your-project-dev --name agw-your-project-dev --no-wait
+az network alb delete --resource-group rg-your-project-dev --name alb-your-project-dev --yes
 ```
 
 #### Key Vault Soft Delete Issues

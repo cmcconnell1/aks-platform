@@ -1,3 +1,21 @@
+# Local for workload identity configuration
+locals {
+  workload_identity_enabled = var.enable_workload_identity && var.workload_identity_client_id != null
+
+  # ServiceAccount annotations for Azure Workload Identity
+  workload_identity_annotations = local.workload_identity_enabled ? {
+    "azure.workload.identity/client-id" = var.workload_identity_client_id
+  } : {}
+
+  # Pod labels for Azure Workload Identity
+  workload_identity_labels = local.workload_identity_enabled ? {
+    "azure.workload.identity/use" = "true"
+  } : {}
+
+  # AGC configuration
+  agc_enabled = var.agc_gateway_name != null
+}
+
 # ArgoCD namespace
 resource "kubernetes_namespace" "argocd" {
   metadata {
@@ -69,6 +87,12 @@ resource "helm_release" "argocd" {
       server = {
         replicas = var.server_replicas
 
+        # Azure Workload Identity
+        serviceAccount = {
+          annotations = local.workload_identity_annotations
+        }
+        podLabels = local.workload_identity_labels
+
         service = {
           type        = var.service_type
           annotations = var.service_annotations
@@ -116,6 +140,12 @@ resource "helm_release" "argocd" {
       controller = {
         replicas = var.controller_replicas
 
+        # Azure Workload Identity
+        serviceAccount = {
+          annotations = local.workload_identity_annotations
+        }
+        podLabels = local.workload_identity_labels
+
         # Resource limits
         resources = {
           limits = {
@@ -131,6 +161,12 @@ resource "helm_release" "argocd" {
 
       repoServer = {
         replicas = var.repo_server_replicas
+
+        # Azure Workload Identity
+        serviceAccount = {
+          annotations = local.workload_identity_annotations
+        }
+        podLabels = local.workload_identity_labels
 
         # Resource limits
         resources = {
@@ -240,6 +276,54 @@ resource "kubernetes_manifest" "app_of_apps" {
           "CreateNamespace=true"
         ]
       }
+    }
+  }
+
+  depends_on = [helm_release.argocd]
+}
+
+# =============================================================================
+# Application Gateway for Containers (AGC) HTTPRoute for ArgoCD
+# =============================================================================
+# HTTPRoute provides routing configuration for AGC Gateway API
+# This is the preferred routing method for AGC (vs traditional Ingress)
+
+resource "kubernetes_manifest" "argocd_httproute" {
+  count = local.agc_enabled && var.enable_ingress ? 1 : 0
+
+  manifest = {
+    apiVersion = "gateway.networking.k8s.io/v1"
+    kind       = "HTTPRoute"
+    metadata = {
+      name      = "argocd-server"
+      namespace = kubernetes_namespace.argocd.metadata[0].name
+    }
+    spec = {
+      parentRefs = [
+        {
+          name      = var.agc_gateway_name
+          namespace = var.agc_gateway_namespace
+        }
+      ]
+      hostnames = length(var.ingress_hosts) > 0 ? var.ingress_hosts : [var.argocd_domain]
+      rules = [
+        {
+          matches = [
+            {
+              path = {
+                type  = "PathPrefix"
+                value = "/"
+              }
+            }
+          ]
+          backendRefs = [
+            {
+              name = "argocd-server"
+              port = 80
+            }
+          ]
+        }
+      ]
     }
   }
 

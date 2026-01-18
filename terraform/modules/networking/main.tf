@@ -15,12 +15,24 @@ resource "azurerm_subnet" "aks" {
   address_prefixes     = [var.aks_subnet_address_prefix]
 }
 
-# Application Gateway Subnet
-resource "azurerm_subnet" "app_gateway" {
-  name                 = "${var.project_name}-${var.environment}-appgw-subnet"
+# Application Gateway for Containers (AGC) Subnet
+# AGC requires subnet delegation to Microsoft.ServiceNetworking/trafficControllers
+resource "azurerm_subnet" "agc" {
+  name                 = "${var.project_name}-${var.environment}-agc-subnet"
   resource_group_name  = var.resource_group_name
   virtual_network_name = azurerm_virtual_network.main.name
-  address_prefixes     = [var.app_gateway_subnet_address_prefix]
+  address_prefixes     = [var.agc_subnet_address_prefix]
+
+  delegation {
+    name = "agc-delegation"
+
+    service_delegation {
+      name = "Microsoft.ServiceNetworking/trafficControllers"
+      actions = [
+        "Microsoft.Network/virtualNetworks/subnets/join/action"
+      ]
+    }
+  }
 }
 
 # Private Endpoints Subnet
@@ -38,16 +50,16 @@ resource "azurerm_network_security_group" "aks" {
   resource_group_name = var.resource_group_name
   tags                = var.tags
 
-  # Allow inbound traffic from Application Gateway
+  # Allow inbound traffic from Application Gateway for Containers (AGC)
   security_rule {
-    name                       = "AllowAppGateway"
+    name                       = "AllowAGC"
     priority                   = 100
     direction                  = "Inbound"
     access                     = "Allow"
     protocol                   = "Tcp"
     source_port_range          = "*"
     destination_port_ranges    = ["80", "443", "8080", "8443"]
-    source_address_prefix      = var.app_gateway_subnet_address_prefix
+    source_address_prefix      = var.agc_subnet_address_prefix
     destination_address_prefix = var.aks_subnet_address_prefix
   }
 
@@ -84,9 +96,9 @@ resource "azurerm_subnet_network_security_group_association" "aks" {
   network_security_group_id = azurerm_network_security_group.aks.id
 }
 
-# Network Security Group for Application Gateway
-resource "azurerm_network_security_group" "app_gateway" {
-  name                = "${var.project_name}-${var.environment}-appgw-nsg"
+# Network Security Group for Application Gateway for Containers (AGC)
+resource "azurerm_network_security_group" "agc" {
+  name                = "${var.project_name}-${var.environment}-agc-nsg"
   location            = var.location
   resource_group_name = var.resource_group_name
   tags                = var.tags
@@ -117,24 +129,37 @@ resource "azurerm_network_security_group" "app_gateway" {
     destination_address_prefix = "*"
   }
 
-  # Allow Application Gateway management ports
+  # Allow Azure Load Balancer health probes
   security_rule {
-    name                       = "AllowAppGatewayManagement"
+    name                       = "AllowAzureLoadBalancer"
     priority                   = 120
     direction                  = "Inbound"
     access                     = "Allow"
+    protocol                   = "*"
+    source_port_range          = "*"
+    destination_port_range     = "*"
+    source_address_prefix      = "AzureLoadBalancer"
+    destination_address_prefix = "*"
+  }
+
+  # Allow outbound to AKS cluster
+  security_rule {
+    name                       = "AllowOutboundToAKS"
+    priority                   = 100
+    direction                  = "Outbound"
+    access                     = "Allow"
     protocol                   = "Tcp"
     source_port_range          = "*"
-    destination_port_range     = "65200-65535"
-    source_address_prefix      = "GatewayManager"
-    destination_address_prefix = "*"
+    destination_port_ranges    = ["80", "443", "8080", "8443"]
+    source_address_prefix      = "*"
+    destination_address_prefix = var.aks_subnet_address_prefix
   }
 }
 
-# Associate NSG with Application Gateway subnet
-resource "azurerm_subnet_network_security_group_association" "app_gateway" {
-  subnet_id                 = azurerm_subnet.app_gateway.id
-  network_security_group_id = azurerm_network_security_group.app_gateway.id
+# Associate NSG with AGC subnet
+resource "azurerm_subnet_network_security_group_association" "agc" {
+  subnet_id                 = azurerm_subnet.agc.id
+  network_security_group_id = azurerm_network_security_group.agc.id
 }
 
 # Route Table for AKS subnet (if needed for custom routing)

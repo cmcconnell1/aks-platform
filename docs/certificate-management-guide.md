@@ -125,8 +125,8 @@ kubectl get challenges -A
 
 #### Test SSL Configuration
 ```bash
-# Get Application Gateway public IP
-az network public-ip show --resource-group rg-your-project-dev --name pip-agw-your-project-dev --query ipAddress
+# Get AGC frontend FQDN
+terraform output agc_frontend_fqdn
 
 # Test SSL certificate
 openssl s_client -connect your-domain.com:443 -servername your-domain.com
@@ -159,11 +159,12 @@ ssl_certificate_dns_names = ["aks-demo.local", "*.aks-demo.local"]
 
 ### Accessing Services with Self-Signed Certificates
 ```bash
-# Get Application Gateway IP
-kubectl get svc -n kube-system
+# Get AGC frontend FQDN and resolve to IP
+terraform output agc_frontend_fqdn
+nslookup $(terraform output -raw agc_frontend_fqdn)
 
 # Add to /etc/hosts (Linux/macOS) or C:\Windows\System32\drivers\etc\hosts (Windows)
-<APPLICATION_GATEWAY_IP> aks-demo.local argocd.aks-demo.local grafana.aks-demo.local
+<AGC_IP> aks-demo.local argocd.aks-demo.local grafana.aks-demo.local
 
 # Access services (accept certificate warnings in browser)
 https://argocd.aks-demo.local
@@ -238,7 +239,7 @@ create_dns_records = true
 ### External DNS Providers
 For external DNS providers (Cloudflare, Route53, etc.):
 
-1. **Manual DNS Configuration**: Create A records pointing to Application Gateway IP
+1. **Manual DNS Configuration**: Create CNAME records pointing to AGC frontend FQDN
 2. **External DNS Controller**: Deploy external-dns for automatic record management
 3. **DNS Challenge**: Configure cert-manager with DNS provider credentials
 
@@ -286,18 +287,22 @@ dig TXT _acme-challenge.yourdomain.com
 kubectl get secret -n cert-manager
 ```
 
-### Application Gateway Certificate Issues
+### AGC Certificate Issues
 
 #### Certificate Not Loading
 ```bash
-# Check Application Gateway configuration
-az network application-gateway show --resource-group rg-your-project-dev --name agw-your-project-dev
+# Check Gateway configuration
+kubectl get gateway -A -o yaml
 
-# Verify Key Vault access
-az keyvault certificate show --vault-name kv-your-project-dev --name your-cert-name
+# Check certificate secrets
+kubectl get secrets -A | grep tls
 
-# Check Application Gateway identity permissions
-az role assignment list --assignee <app-gateway-identity>
+# Verify cert-manager certificates
+kubectl get certificates -A
+kubectl describe certificate your-cert-name -n your-namespace
+
+# Check ALB Controller logs
+kubectl logs -n azure-alb-system -l app=alb-controller
 ```
 
 #### SSL Handshake Failures
@@ -329,7 +334,7 @@ echo | openssl s_client -connect yourdomain.com:443 2>/dev/null | openssl x509 -
 ### Network Security
 - Use private endpoints for Key Vault
 - Implement network security groups
-- Enable Application Gateway WAF
+- Configure AGC for secure traffic handling
 - Monitor certificate-related traffic
 
 ## Cost Considerations
@@ -346,7 +351,7 @@ echo | openssl s_client -connect yourdomain.com:443 2>/dev/null | openssl x509 -
 
 ### Azure Services
 - **Key Vault**: $0.03 per 10,000 operations
-- **Application Gateway**: Standard pricing
+- **Application Gateway for Containers**: Standard pricing
 - **DNS**: $0.50 per hosted zone per month
 
 ## Migration Strategies

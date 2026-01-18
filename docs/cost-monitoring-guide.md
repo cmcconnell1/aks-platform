@@ -236,7 +236,7 @@ python3 scripts/azure-cost-monitor.py --days 30
 Common cost drivers in AKS environments:
 - **Compute**: Node pools, especially GPU-enabled nodes
 - **Storage**: Premium SSD, backup storage
-- **Networking**: Application Gateway, Load Balancer data transfer
+- **Networking**: Application Gateway for Containers (AGC), Load Balancer data transfer
 - **Monitoring**: Log Analytics data ingestion and retention
 
 ### Cost Reduction Strategies

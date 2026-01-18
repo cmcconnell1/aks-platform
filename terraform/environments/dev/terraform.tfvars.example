@@ -4,9 +4,9 @@ location    = "East US"
 project_name = "aks-platform"
 
 # Networking Configuration
-vnet_address_space                    = ["10.0.0.0/16"]
-aks_subnet_address_prefix             = "10.0.1.0/24"
-app_gateway_subnet_address_prefix     = "10.0.2.0/24"
+vnet_address_space                     = ["10.0.0.0/16"]
+aks_subnet_address_prefix              = "10.0.1.0/24"
+agc_subnet_address_prefix              = "10.0.2.0/24"
 private_endpoint_subnet_address_prefix = "10.0.3.0/24"
 
 # AKS Configuration
@@ -41,8 +41,10 @@ letsencrypt_email = ""       # Required when enable_cert_manager = true
 enable_letsencrypt_staging = true   # Start with staging for testing
 enable_letsencrypt_prod = false     # Enable after testing with staging
 
-# Application Gateway
-enable_application_gateway = true
+# Application Gateway for Containers (AGC)
+enable_agc             = true
+create_default_gateway = true
+enable_agc_https       = true
 
 # GitOps Configuration
 enable_argocd     = true

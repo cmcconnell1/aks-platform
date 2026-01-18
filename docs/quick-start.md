@@ -232,7 +232,7 @@ After deployment, you'll have:
 
 ### Core Infrastructure
 - **AKS Cluster** with auto-scaling node pools
-- **Application Gateway** with WAF and SSL termination
+- **Application Gateway for Containers (AGC)** with Gateway API
 - **Container Registry** with private endpoints
 - **Key Vault** for secrets and certificates
 - **Virtual Network** with proper segmentation
@@ -265,10 +265,10 @@ kubectl get nodes
 
 ### Access Applications
 
-1. **Get Application Gateway IP**:
+1. **Get AGC Frontend FQDN**:
    ```bash
-   terraform output application_gateway_public_ip
-   # Example: 20.123.45.67
+   terraform output agc_frontend_fqdn
+   # Example: abc123.region.alb.azure.com
    ```
 
 2. **Configure DNS access**:
@@ -284,11 +284,11 @@ kubectl get nodes
 
    **Option B: Real domain (DNS records)**:
    ```bash
-   # Create DNS A records pointing to Application Gateway IP
-   argocd.your-domain.com   -> 20.123.45.67
-   grafana.your-domain.com  -> 20.123.45.67
-   jupyter.your-domain.com  -> 20.123.45.67
-   mlflow.your-domain.com   -> 20.123.45.67
+   # Create DNS CNAME records pointing to AGC frontend FQDN
+   argocd.your-domain.com   CNAME abc123.region.alb.azure.com
+   grafana.your-domain.com  CNAME abc123.region.alb.azure.com
+   jupyter.your-domain.com  CNAME abc123.region.alb.azure.com
+   mlflow.your-domain.com   CNAME abc123.region.alb.azure.com
    ```
 
 3. **Get passwords**:
@@ -361,8 +361,8 @@ kubectl get pods -n monitoring
 ### View Logs
 
 ```bash
-# Application Gateway Ingress Controller
-kubectl logs -n kube-system -l app=ingress-appgw
+# ALB Controller (for AGC)
+kubectl logs -n azure-alb-system -l app=alb-controller
 
 # ArgoCD
 kubectl logs -n argocd -l app.kubernetes.io/name=argocd-server
@@ -406,9 +406,9 @@ echo $ARM_CLIENT_ID
 ```
 
 **Can't access applications**:
-- Check Application Gateway backend health
+- Check ALB Controller status: `kubectl get pods -n azure-alb-system`
 - Verify DNS configuration
-- Check ingress resources
+- Check HTTPRoute resources: `kubectl get httproutes -A`
 
 **ArgoCD not syncing**:
 - Verify Git repository access

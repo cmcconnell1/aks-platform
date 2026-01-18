@@ -19,7 +19,7 @@ This project showcases:
 - **GitOps workflows** with ArgoCD for application deployment
 - **Containerization** with Docker and Kubernetes (AKS)
 - **CI/CD pipelines** with GitHub Actions
-- **Application Gateway Ingress Controller (AGIC)** for Azure-native ingress
+- **Application Gateway for Containers (AGC)** for cloud-native load balancing with Gateway API
 - **AI/ML platform** with JupyterHub, MLflow, and GPU support
 - **Cloud security** best practices and compliance
 - **Modular architecture** for reusable infrastructure components
@@ -75,7 +75,7 @@ graph TB
 ### Infrastructure Components
 - **Virtual Networks** with proper subnetting and security groups
 - **Azure Kubernetes Service (AKS)** with auto-scaling and monitoring
-- **Application Gateway with AGIC** for Azure-native ingress and SSL termination
+- **Application Gateway for Containers (AGC)** for cloud-native ingress and SSL termination
 - **Key Vault** for secrets management and SSL certificates
 - **Log Analytics** and comprehensive monitoring solutions
 - **Container Registry** with private endpoints for Docker images
@@ -104,9 +104,9 @@ This Terraform configuration creates a **complete, production-ready AKS platform
 
 ### Core Infrastructure
 - **Resource Group** - Dedicated resource group for all resources
-- **Virtual Network** - Complete VNet with 4 subnets (AKS, App Gateway, Private Endpoints)
+- **Virtual Network** - Complete VNet with 4 subnets (AKS, AGC, Private Endpoints)
 - **AKS Cluster** - Multi-node pool cluster with system, user, and AI/ML (GPU) node pools
-- **Application Gateway** - Azure-native ingress with WAF v2 and SSL termination
+- **Application Gateway for Containers** - Cloud-native load balancing with Gateway API
 - **Container Registry** - Private container registry with private endpoints
 - **Key Vault** - Secrets and certificate management with SSL certificates
 - **cert-manager** - Automatic SSL certificate management with Let's Encrypt integration

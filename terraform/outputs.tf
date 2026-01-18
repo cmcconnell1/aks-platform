@@ -83,15 +83,25 @@ output "container_registry_login_server" {
   value       = module.container_registry.registry_login_server
 }
 
-# Application Gateway outputs
-output "application_gateway_public_ip" {
-  description = "Public IP address of the Application Gateway"
-  value       = var.enable_application_gateway ? module.application_gateway[0].public_ip_address : null
+# Application Gateway for Containers (AGC) outputs
+output "agc_id" {
+  description = "ID of the Application Gateway for Containers"
+  value       = var.enable_agc ? module.agc[0].agc_id : null
 }
 
-output "application_gateway_fqdn" {
-  description = "FQDN of the Application Gateway"
-  value       = var.enable_application_gateway ? module.application_gateway[0].public_ip_fqdn : null
+output "agc_frontend_fqdn" {
+  description = "FQDN of the AGC frontend (use for DNS CNAME records)"
+  value       = var.enable_agc ? module.agc[0].frontend_fqdn : null
+}
+
+output "agc_gateway_name" {
+  description = "Name of the AGC Gateway resource"
+  value       = var.enable_agc ? module.agc[0].gateway_name : null
+}
+
+output "agc_gateway_class" {
+  description = "Gateway class name for AGC (use in HTTPRoute resources)"
+  value       = var.enable_agc ? module.agc[0].gateway_class_name : null
 }
 
 # Security outputs

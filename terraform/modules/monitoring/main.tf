@@ -8,6 +8,24 @@ resource "kubernetes_namespace" "monitoring" {
   }
 }
 
+# Local for workload identity configuration
+locals {
+  workload_identity_enabled = var.enable_workload_identity && var.workload_identity_client_id != null
+
+  # ServiceAccount annotations for Azure Workload Identity
+  workload_identity_annotations = local.workload_identity_enabled ? {
+    "azure.workload.identity/client-id" = var.workload_identity_client_id
+  } : {}
+
+  # Pod labels for Azure Workload Identity
+  workload_identity_labels = local.workload_identity_enabled ? {
+    "azure.workload.identity/use" = "true"
+  } : {}
+
+  # AGC configuration
+  agc_enabled = var.agc_gateway_name != null
+}
+
 # Prometheus using kube-prometheus-stack
 resource "helm_release" "prometheus" {
   name       = "prometheus"
@@ -19,7 +37,15 @@ resource "helm_release" "prometheus" {
   values = [
     yamlencode({
       prometheus = {
+        # Azure Workload Identity for Prometheus ServiceAccount
+        serviceAccount = {
+          annotations = local.workload_identity_annotations
+        }
         prometheusSpec = {
+          # Pod labels for Azure Workload Identity
+          podMetadata = {
+            labels = local.workload_identity_labels
+          }
           retention = var.prometheus_retention
           storageSpec = {
             volumeClaimTemplate = {
@@ -50,6 +76,12 @@ resource "helm_release" "prometheus" {
       grafana = {
         enabled       = true
         adminPassword = var.grafana_admin_password
+
+        # Azure Workload Identity for Grafana
+        serviceAccount = {
+          annotations = local.workload_identity_annotations
+        }
+        podLabels = local.workload_identity_labels
 
         service = {
           type = "ClusterIP"
@@ -274,6 +306,54 @@ resource "helm_release" "jaeger" {
       }
     })
   ]
+
+  depends_on = [helm_release.prometheus]
+}
+
+# =============================================================================
+# Application Gateway for Containers (AGC) HTTPRoute for Grafana
+# =============================================================================
+# HTTPRoute provides routing configuration for AGC Gateway API
+# This is the preferred routing method for AGC (vs traditional Ingress)
+
+resource "kubernetes_manifest" "grafana_httproute" {
+  count = local.agc_enabled && var.enable_grafana_ingress ? 1 : 0
+
+  manifest = {
+    apiVersion = "gateway.networking.k8s.io/v1"
+    kind       = "HTTPRoute"
+    metadata = {
+      name      = "grafana"
+      namespace = kubernetes_namespace.monitoring.metadata[0].name
+    }
+    spec = {
+      parentRefs = [
+        {
+          name      = var.agc_gateway_name
+          namespace = var.agc_gateway_namespace
+        }
+      ]
+      hostnames = var.grafana_ingress_hosts
+      rules = [
+        {
+          matches = [
+            {
+              path = {
+                type  = "PathPrefix"
+                value = "/"
+              }
+            }
+          ]
+          backendRefs = [
+            {
+              name = "prometheus-grafana"
+              port = 80
+            }
+          ]
+        }
+      ]
+    }
+  }
 
   depends_on = [helm_release.prometheus]
 }

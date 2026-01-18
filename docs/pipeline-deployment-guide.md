@@ -128,7 +128,7 @@ enable_grafana = true
 # Networking
 vnet_address_space = ["10.0.0.0/16"]
 aks_subnet_address_prefix = "10.0.1.0/24"
-appgw_subnet_address_prefix = "10.0.2.0/24"
+agc_subnet_address_prefix = "10.0.2.0/24"
 
 # AKS Configuration
 kubernetes_version = "1.28"
@@ -296,9 +296,9 @@ The pipeline automatically configures Let's Encrypt certificates:
 ### Wildcard Certificate Support
 For wildcard certificates:
 
-1. Upload certificate to Azure Key Vault manually
-2. Configure Terraform to reference existing certificate
-3. Pipeline will configure Application Gateway to use it
+1. Create certificate as Kubernetes secret
+2. Configure Gateway TLS to reference the secret
+3. Pipeline will configure AGC to use it via Gateway API
 
 ## Troubleshooting Pipeline Issues
 
@@ -347,7 +347,7 @@ For wildcard certificates:
 
 After successful pipeline deployment:
 
-1. **Configure DNS** - Point your domain to Application Gateway public IP
+1. **Configure DNS** - Point your domain to AGC frontend FQDN
 2. **Set up monitoring** - Configure Grafana dashboards and alerts
 3. **Deploy applications** - Use ArgoCD for application lifecycle management
 4. **Security hardening** - Review and implement additional security measures

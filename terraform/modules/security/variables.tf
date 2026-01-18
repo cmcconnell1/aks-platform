@@ -134,6 +134,40 @@ variable "enable_cert_manager" {
   default     = false
 }
 
+# =============================================================================
+# Azure Workload Identity Configuration
+# =============================================================================
+
+variable "aks_oidc_issuer_url" {
+  description = "OIDC issuer URL from AKS cluster for federated identity credentials"
+  type        = string
+  default     = null
+}
+
+variable "enable_workload_identity" {
+  description = "Enable Azure Workload Identity for pod authentication"
+  type        = bool
+  default     = true
+}
+
+variable "enable_monitoring" {
+  description = "Enable monitoring stack (creates managed identity)"
+  type        = bool
+  default     = true
+}
+
+variable "enable_gitops" {
+  description = "Enable GitOps/ArgoCD (creates managed identity)"
+  type        = bool
+  default     = true
+}
+
+variable "enable_ai_tools" {
+  description = "Enable AI tools (creates managed identity)"
+  type        = bool
+  default     = true
+}
+
 variable "tags" {
   description = "Tags to apply to resources"
   type        = map(string)
