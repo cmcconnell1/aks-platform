@@ -80,6 +80,7 @@ graph TB
 - **Virtual Networks** with proper subnetting and security groups
 - **Azure Kubernetes Service (AKS)** with auto-scaling and monitoring
 - **Application Gateway for Containers (AGC)** for cloud-native ingress and SSL termination
+- **cert-manager with Let's Encrypt** for automatic SSL certificate provisioning and renewal
 - **Key Vault** for secrets management and SSL certificates
 - **Log Analytics** and comprehensive monitoring solutions
 - **Container Registry** with private endpoints for Docker images
@@ -87,6 +88,7 @@ graph TB
 
 ### Security Features
 - **Environment isolation** - Explicit environment specification required (no defaults)
+- **Automatic TLS certificates** via Let's Encrypt with cert-manager
 - Network security groups and application security groups
 - Azure Active Directory integration
 - Role-based access control (RBAC)
@@ -158,7 +160,7 @@ Self-managed services deployed via Terraform Helm provider. You control versions
 | **Prometheus** | `kube-prometheus-stack` | `monitoring` | Metrics and alerting |
 | **Grafana** | (included above) | `monitoring` | Dashboards and visualization |
 | **Loki** | `grafana/loki` | `monitoring` | Log aggregation |
-| **cert-manager** | `jetstack/cert-manager` | `cert-manager` | TLS certificate automation |
+| **cert-manager** | `jetstack/cert-manager` | `cert-manager` | Let's Encrypt TLS certificates with auto-renewal |
 | **JupyterHub** | `jupyterhub/jupyterhub` | `ai-tools` | Multi-user notebook server |
 | **MLflow** | `community-charts/mlflow` | `ai-tools` | ML experiment tracking |
 
@@ -400,8 +402,10 @@ python3 scripts/manage-dependencies.py freeze
 | [**Greenfield Deployment Validation**](docs/greenfield-deployment-validation.md) | Complete validation checklist and methods |
 | [**Certificate Management Guide**](docs/certificate-management-guide.md) | SSL/TLS certificate options and setup |
 | [**Deployment Guide**](docs/deployment-guide.md) | Comprehensive deployment instructions |
+| [**Environment Configuration Guide**](docs/environment-configuration-guide.md) | Environment-specific variables and settings |
 | [**Existing Infrastructure Guide**](docs/existing-infrastructure-guide.md) | Integration with existing Azure environments |
 | [**Let's Encrypt Integration**](docs/letsencrypt-integration.md) | Automatic SSL certificate management |
+| [**Application Gateway for Containers**](docs/application-gateway-for-containers.md) | AGC architecture and Gateway API configuration |
 
 ### Operations & Security
 | Guide | Description |
@@ -410,15 +414,18 @@ python3 scripts/manage-dependencies.py freeze
 | [**Platform Design Philosophy**](docs/platform-design-philosophy.md) | Design decisions and trade-offs |
 | [**Cluster Access Guide**](docs/cluster-access-guide.md) | Environment-specific cluster access (public vs private) |
 | [**Security Guide**](docs/security.md) | Security best practices and configurations |
+| [**Azure Workload Identity**](docs/azure-workload-identity.md) | Pod-to-Azure authentication via OIDC |
+| [**Azure GitHub OIDC Setup**](docs/azure-github-oidc-setup.md) | Secretless CI/CD authentication |
 | [**CI/CD Guide**](docs/cicd-guide.md) | GitHub Actions workflows and automation |
 | [**Helm Management Guide**](docs/helm-management-guide.md) | Helm chart management and GitOps workflows |
 | [**Cost Monitoring Guide**](docs/cost-monitoring-guide.md) | Real-time Azure cost monitoring and budget alerts |
 | [**AI/ML Workloads Guide**](docs/ai-ml-workloads-guide.md) | GPU node scheduling and AI/ML platform usage |
 
 ### Infrastructure Management
-| Script | Description | Usage |
-|--------|-------------|-------|
-| `./scripts/show-infrastructure.sh` | **Infrastructure overview** - Shows all deployed resources by environment | `./scripts/show-infrastructure.sh --all --costs` |
+| Guide | Description |
+|-------|-------------|
+| `./scripts/show-infrastructure.sh` | Infrastructure overview - Shows all deployed resources (`--all --costs`) |
+| [**AKS Cluster Upgrade Guide**](docs/aks-cluster-upgrade-guide.md) | Kubernetes version upgrades and node pool updates |
 | [**Troubleshooting**](docs/troubleshooting.md) | Common issues and solutions |
 | [**Production Update Strategy**](docs/production-update-strategy.md) | Safe production deployment procedures |
 | [**Cleanup Guide**](docs/cleanup-guide.md) | Complete infrastructure removal |
