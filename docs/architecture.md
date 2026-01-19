@@ -537,9 +537,461 @@ flowchart LR
 - **Compliance**: Additional security frameworks
 
 ### **Scalability Roadmap**
-- **Global Load Balancing**: Azure Front Door
+- **Global Load Balancing**: Azure Front Door (see detailed section below)
 - **Edge Computing**: Azure IoT Edge integration
 - **Hybrid Cloud**: Azure Arc for on-premises
 - **Serverless**: Azure Container Instances integration
+
+---
+
+## Azure Front Door (Future Option)
+
+Azure Front Door is **not currently implemented** but is available as a future enhancement when global load balancing, advanced WAF, or multi-region capabilities are needed.
+
+### **Features and Benefits**
+
+| Feature | Benefit |
+|---------|---------|
+| **Global Load Balancing** | Route traffic to nearest healthy backend across regions |
+| **WAF (Web Application Firewall)** | OWASP protection, bot mitigation, DDoS protection |
+| **SSL Offloading** | Managed certificates, TLS termination at edge |
+| **Caching** | Edge caching for static content, reduced latency |
+| **URL Rewriting/Routing** | Path-based routing, redirects, header manipulation |
+| **Health Probes** | Automatic failover to healthy backends |
+| **Private Link** | Secure connectivity to private AKS clusters |
+| **Multi-region HA** | Active-active or active-passive deployments |
+
+### **Architecture Comparison**
+
+```
+CURRENT ARCHITECTURE:
++----------+     +---------------------+     +-------------+
+| Internet | --> | AGC (regional)      | --> | AKS Cluster |
++----------+     +---------------------+     +-------------+
+
+WITH AZURE FRONT DOOR:
++----------+     +---------------------------+     +-----+     +-----+
+| Internet | --> | Azure Front Door          | --> | AGC | --> | AKS |
++----------+     | (global edge network)     |     +-----+     +-----+
+                 +---------------------------+
+                           |
+                 +---------+---------+
+                 |         |         |
+                 v         v         v
+              WAF      Caching    Multi-region
+           Protection            Routing
+```
+
+### **When to Implement**
+
+Consider implementing Azure Front Door when:
+
+| Trigger | Scenario |
+|---------|----------|
+| **Global Users** | Users accessing from multiple geographic regions |
+| **WAF Requirements** | Compliance requires OWASP protection or bot mitigation |
+| **DDoS Protection** | Need enterprise-grade DDoS protection beyond Azure defaults |
+| **Multi-Region HA** | Deploying AKS clusters in multiple regions for disaster recovery |
+| **Edge Caching** | Significant static content that benefits from edge caching |
+| **Private Backend** | Production requires private AGC with Front Door Private Link |
+
+### **Cost Considerations**
+
+| Tier | Base Cost | Features | Use Case |
+|------|-----------|----------|----------|
+| **Front Door Standard** | ~$35/month | Basic routing, SSL, caching | Dev/staging, simple routing |
+| **Front Door Premium** | ~$330/month | + WAF, Private Link, advanced analytics | Production with security requirements |
+
+**Additional costs:**
+- Per-request charges (~$0.01 per 10,000 requests)
+- Data transfer (varies by region)
+- WAF rules (if using managed rule sets)
+
+**Cost comparison with current architecture:**
+- Current (AGC only): ~$0 base + data transfer
+- With Front Door Standard: +$35/month + per-request
+- With Front Door Premium: +$330/month + per-request + WAF
+
+### **Trade-offs**
+
+| Consideration | Without Front Door | With Front Door |
+|---------------|-------------------|-----------------|
+| **Complexity** | Simpler architecture | Additional layer to manage |
+| **Cost** | Lower | Higher base + usage costs |
+| **Latency** | Direct to region | Edge optimization (usually lower) |
+| **WAF** | None (or separate Azure WAF) | Integrated, managed rules |
+| **Multi-region** | Manual DNS failover | Automatic health-based routing |
+| **SSL Management** | cert-manager / AGC | Front Door managed certs |
+| **Debugging** | Simpler path | Additional hop to trace |
+
+### **Implementation Approach (When Ready)**
+
+When the decision is made to implement Azure Front Door:
+
+1. **Create Terraform module** (`terraform/modules/front_door/`)
+   - Front Door profile (Standard or Premium)
+   - WAF policy with OWASP managed rules
+   - Origin groups pointing to AGC endpoints
+   - Routes for each service
+
+2. **Configure endpoints**
+   - Custom domains with managed certificates
+   - Routing rules for ArgoCD, Grafana, JupyterHub, MLflow
+   - Caching rules for static content
+
+3. **Production security**
+   - Private Link to AGC (Premium tier required)
+   - WAF in prevention mode
+   - Geo-filtering if required
+
+4. **DNS migration**
+   - Update DNS to point to Front Door endpoint
+   - Validate routing and SSL
+
+### **Related Documentation**
+- [Microsoft Docs: Azure Front Door](https://docs.microsoft.com/azure/frontdoor/)
+- [Front Door + AKS Integration](https://docs.microsoft.com/azure/frontdoor/front-door-overview)
+- [WAF on Front Door](https://docs.microsoft.com/azure/web-application-firewall/afds/afds-overview)
+
+---
+
+## Service Mesh - Istio (Future Option)
+
+Istio is **not currently implemented** but provides advanced traffic management, security, and observability capabilities when needed.
+
+### **Features and Benefits**
+
+| Feature | Benefit |
+|---------|---------|
+| **mTLS (Mutual TLS)** | Automatic encryption between all services |
+| **Traffic Management** | Canary deployments, A/B testing, traffic splitting |
+| **Circuit Breaking** | Prevent cascade failures with automatic circuit breakers |
+| **Rate Limiting** | Protect services from overload |
+| **Observability** | Distributed tracing, metrics, access logs |
+| **Authorization Policies** | Fine-grained access control between services |
+| **Fault Injection** | Test resilience by injecting failures |
+| **Retries/Timeouts** | Automatic retry logic and timeout management |
+
+### **Architecture with Istio**
+
+```
++------------------+     +------------------+     +------------------+
+|   Service A      | --> |  Envoy Sidecar   | --> |  Envoy Sidecar   | --> Service B
++------------------+     +------------------+     +------------------+
+                                  |
+                         +--------v--------+
+                         |  Istio Control  |
+                         |     Plane       |
+                         +-----------------+
+                                  |
+                    +-------------+-------------+
+                    |             |             |
+                 Pilot        Citadel       Galley
+              (traffic)     (security)    (config)
+```
+
+### **When to Implement**
+
+| Trigger | Scenario |
+|---------|----------|
+| **Zero-Trust Security** | Require mTLS between all services |
+| **Complex Routing** | Canary deployments, A/B testing needs |
+| **Microservices Architecture** | Many services requiring traffic management |
+| **Compliance** | Audit requirements for service-to-service communication |
+| **Resilience Testing** | Need fault injection and chaos engineering |
+
+### **Cost Considerations**
+
+| Cost Type | Impact |
+|-----------|--------|
+| **Compute Overhead** | ~10-15% additional CPU/memory per pod (sidecar) |
+| **Operational Complexity** | Requires Istio expertise for troubleshooting |
+| **Latency** | ~1-3ms additional latency per hop |
+
+### **Trade-offs**
+
+| Consideration | Without Istio | With Istio |
+|---------------|--------------|------------|
+| **Complexity** | Simpler architecture | Additional control plane |
+| **Resource Usage** | Lower | +10-15% CPU/memory overhead |
+| **mTLS** | Manual configuration | Automatic, transparent |
+| **Traffic Control** | Basic Kubernetes | Advanced routing, splitting |
+| **Debugging** | Direct service calls | Additional proxy layer |
+| **Learning Curve** | Lower | Requires Istio expertise |
+
+### **Implementation Approach (When Ready)**
+
+1. Install Istio control plane via Helm
+2. Enable sidecar injection per namespace
+3. Configure PeerAuthentication for mTLS
+4. Create VirtualServices for traffic management
+5. Set up Kiali dashboard for visualization
+
+### **Related Documentation**
+- [Istio Documentation](https://istio.io/latest/docs/)
+- [Istio on AKS](https://docs.microsoft.com/azure/aks/servicemesh-istio-about)
+
+---
+
+## Azure Arc (Future Option)
+
+Azure Arc is **not currently implemented** but enables hybrid and multi-cloud Kubernetes management.
+
+### **Features and Benefits**
+
+| Feature | Benefit |
+|---------|---------|
+| **Unified Management** | Manage on-premises, edge, and multi-cloud K8s from Azure |
+| **GitOps with Flux** | Azure-managed GitOps configuration |
+| **Azure Policy** | Extend Azure Policy to any Kubernetes cluster |
+| **Azure Monitor** | Centralized monitoring across all clusters |
+| **Azure Defender** | Security protection for Arc-enabled clusters |
+| **Cluster Extensions** | Deploy Azure services to any cluster |
+| **Custom Locations** | Create Azure resource targets on any cluster |
+
+### **Architecture with Azure Arc**
+
+```
++------------------+     +------------------+     +------------------+
+|  On-Premises K8s |     |    AKS Cluster   |     |   AWS EKS/GKE    |
++--------+---------+     +--------+---------+     +--------+---------+
+         |                        |                        |
+         +------------------------+------------------------+
+                                  |
+                         +--------v--------+
+                         |   Azure Arc     |
+                         |  Control Plane  |
+                         +-----------------+
+                                  |
+                    +-------------+-------------+
+                    |             |             |
+                 Policy       Monitor      GitOps
+```
+
+### **When to Implement**
+
+| Trigger | Scenario |
+|---------|----------|
+| **Hybrid Cloud** | On-premises Kubernetes clusters to manage |
+| **Multi-Cloud** | AWS EKS or GCP GKE clusters alongside AKS |
+| **Edge Computing** | Kubernetes at edge locations |
+| **Consistent Governance** | Apply same policies across all clusters |
+| **Centralized Monitoring** | Single pane of glass for all clusters |
+
+### **Cost Considerations**
+
+| Component | Cost |
+|-----------|------|
+| **Arc Control Plane** | Free |
+| **Arc-enabled Data Services** | Per-vCore pricing |
+| **Azure Policy (Arc)** | Free (included) |
+| **Azure Monitor (Arc)** | Standard Log Analytics pricing |
+| **GitOps (Flux)** | Free for basic, ~$2/cluster/month for advanced |
+
+### **Trade-offs**
+
+| Consideration | Without Arc | With Arc |
+|---------------|-------------|----------|
+| **Multi-cluster Management** | Manual per-cluster | Unified Azure portal |
+| **Policy Consistency** | Manual enforcement | Automatic via Azure Policy |
+| **Monitoring** | Per-cluster setup | Centralized Azure Monitor |
+| **GitOps** | Self-managed ArgoCD/Flux | Azure-managed Flux |
+| **Complexity** | Simpler for single-cluster | Better for multi-cluster |
+
+### **Implementation Approach (When Ready)**
+
+1. Install Arc agents on target clusters
+2. Connect clusters to Azure Arc
+3. Enable GitOps configurations
+4. Apply Azure Policies
+5. Configure Azure Monitor integration
+
+### **Related Documentation**
+- [Azure Arc-enabled Kubernetes](https://docs.microsoft.com/azure/azure-arc/kubernetes/)
+- [GitOps with Flux and Arc](https://docs.microsoft.com/azure/azure-arc/kubernetes/conceptual-gitops-flux2)
+
+---
+
+## Kubeflow (Future Option)
+
+Kubeflow is **not currently implemented** but provides advanced ML pipeline orchestration and model serving.
+
+### **Features and Benefits**
+
+| Feature | Benefit |
+|---------|---------|
+| **ML Pipelines** | Orchestrate complex ML workflows as DAGs |
+| **Experiment Tracking** | Track experiments, parameters, and metrics |
+| **Model Serving** | KServe for scalable model inference |
+| **Jupyter Notebooks** | Integrated notebook environment |
+| **Hyperparameter Tuning** | Katib for automated hyperparameter optimization |
+| **Feature Store** | Feast integration for feature management |
+| **Multi-Framework** | TensorFlow, PyTorch, XGBoost, and more |
+
+### **Current vs Kubeflow Architecture**
+
+```
+CURRENT (JupyterHub + MLflow):
++-------------+     +----------+
+| JupyterHub  | --> |  MLflow  | --> Model Registry
++-------------+     +----------+
+
+WITH KUBEFLOW:
++------------------+
+|    Kubeflow      |
++--------+---------+
+         |
++--------+--------+--------+--------+
+|        |        |        |        |
+v        v        v        v        v
+Pipelines  Notebooks  KServe  Katib  Training
+                     (serving) (tuning) (distributed)
+```
+
+### **When to Implement**
+
+| Trigger | Scenario |
+|---------|----------|
+| **Complex ML Pipelines** | Multi-step ML workflows with dependencies |
+| **Model Serving at Scale** | High-throughput, low-latency inference |
+| **Distributed Training** | Training across multiple GPUs/nodes |
+| **Hyperparameter Optimization** | Automated tuning at scale |
+| **ML Platform Team** | Dedicated team to manage ML infrastructure |
+
+### **Cost Considerations**
+
+| Component | Cost Impact |
+|-----------|-------------|
+| **Control Plane** | ~2-4 vCPU, 4-8GB RAM always running |
+| **Pipeline Workers** | Compute during pipeline execution |
+| **Model Serving** | Per-model inference pods |
+| **Storage** | Pipeline artifacts, model storage |
+| **GPU Usage** | Training and serving workloads |
+
+**Estimated additional costs**: $200-500/month base + compute usage
+
+### **Trade-offs**
+
+| Consideration | JupyterHub + MLflow | Kubeflow |
+|---------------|---------------------|----------|
+| **Complexity** | Simple, easy to manage | Complex, requires expertise |
+| **Resource Usage** | Minimal overhead | Significant control plane |
+| **Pipeline Orchestration** | Manual or basic | Advanced DAG workflows |
+| **Model Serving** | Manual deployment | Integrated KServe |
+| **Learning Curve** | Low | High |
+| **Team Size** | Small data science teams | Platform team recommended |
+
+### **Implementation Approach (When Ready)**
+
+1. Deploy Kubeflow via manifests or Helm
+2. Configure Istio (Kubeflow dependency)
+3. Set up authentication (Dex/OIDC)
+4. Migrate notebooks from JupyterHub
+5. Convert MLflow experiments to Kubeflow pipelines
+6. Deploy KServe for model serving
+
+### **Related Documentation**
+- [Kubeflow Documentation](https://www.kubeflow.org/docs/)
+- [Kubeflow on Azure](https://www.kubeflow.org/docs/distributions/azure/)
+
+---
+
+## Multi-Region Deployment (Future Option)
+
+Multi-region deployment is **not currently implemented** but provides disaster recovery and global availability.
+
+### **Features and Benefits**
+
+| Feature | Benefit |
+|---------|---------|
+| **Disaster Recovery** | Automatic failover if primary region fails |
+| **Global Availability** | Lower latency for geographically distributed users |
+| **Data Residency** | Meet compliance requirements for data location |
+| **Load Distribution** | Spread traffic across regions |
+| **Blue-Green Deployments** | Use regions for zero-downtime deployments |
+
+### **Multi-Region Architecture Options**
+
+```
+ACTIVE-PASSIVE (DR):
++------------------+                    +------------------+
+|  Primary Region  |  -- replication -> |  Secondary Region|
+|  (Active)        |                    |  (Standby)       |
++------------------+                    +------------------+
+        ^
+        |
+   All Traffic
+
+ACTIVE-ACTIVE (Global):
++------------------+                    +------------------+
+|  Region 1        | <-- Front Door --> |  Region 2        |
+|  (Active)        |    (Global LB)     |  (Active)        |
++------------------+                    +------------------+
+        ^                                       ^
+        |                                       |
+   US/EU Traffic                          APAC Traffic
+```
+
+### **When to Implement**
+
+| Trigger | Scenario |
+|---------|----------|
+| **DR Requirements** | Business requires < 4hr RTO |
+| **Global Users** | Users in multiple continents |
+| **Compliance** | Data residency requirements (GDPR, etc.) |
+| **High Availability** | 99.99%+ uptime SLA requirements |
+| **Risk Mitigation** | Protect against regional Azure outages |
+
+### **Cost Considerations**
+
+| Component | Cost Multiplier |
+|-----------|-----------------|
+| **Infrastructure** | 2x (duplicate AKS, AGC, networking) |
+| **Data Replication** | Cross-region egress charges |
+| **Azure Front Door** | Required for traffic routing (~$35-330/month) |
+| **Database Replication** | Geo-redundant storage/database costs |
+| **Monitoring** | Additional Log Analytics workspace |
+
+**Estimated additional costs**: 80-120% of single-region costs
+
+### **Trade-offs**
+
+| Consideration | Single Region | Multi-Region |
+|---------------|---------------|--------------|
+| **Cost** | Baseline | 2x+ infrastructure |
+| **Complexity** | Simple | Significant operational overhead |
+| **Data Consistency** | Strong | Eventual (cross-region) |
+| **Deployment** | Single target | Coordinated multi-region |
+| **Debugging** | Straightforward | Complex distributed tracing |
+| **RTO/RPO** | Hours (backup restore) | Minutes (failover) |
+
+### **Implementation Approach (When Ready)**
+
+1. **Deploy secondary region infrastructure**
+   - Duplicate Terraform with region variable
+   - Configure separate state files per region
+
+2. **Set up data replication**
+   - Azure SQL geo-replication or Cosmos DB multi-region
+   - Storage account geo-redundancy (GRS/GZRS)
+
+3. **Configure Azure Front Door**
+   - Origin groups with both regions
+   - Health probes for automatic failover
+   - Priority or weighted routing
+
+4. **Implement GitOps for multi-region**
+   - ArgoCD ApplicationSets for multi-cluster
+   - Region-specific configurations
+
+5. **Test failover procedures**
+   - Regular DR drills
+   - Documented runbooks
+
+### **Related Documentation**
+- [AKS Business Continuity](https://docs.microsoft.com/azure/aks/operator-best-practices-multi-region)
+- [Azure Front Door Multi-Region](https://docs.microsoft.com/azure/frontdoor/front-door-lb-with-azure-app-delivery-suite)
+
+---
 
 This architecture provides a solid foundation for modern cloud-native applications while maintaining flexibility for future growth and requirements.

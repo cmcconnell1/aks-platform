@@ -339,4 +339,79 @@ echo "OK - Azure costs: $COST USD"
 exit 0
 ```
 
+## Future Cost Considerations
+
+The following optional components are not currently implemented but may be added in the future. Consider these costs when planning:
+
+### Azure Front Door (Optional - Not Implemented)
+
+| Tier | Base Cost | Additional Costs | Use Case |
+|------|-----------|------------------|----------|
+| **Standard** | ~$35/month | + ~$0.01/10K requests | Basic global routing, SSL, caching |
+| **Premium** | ~$330/month | + requests + WAF rules | Production with WAF, Private Link |
+
+**When to consider**: Global users, WAF requirements, multi-region HA, edge caching needs.
+
+See [Architecture Guide - Azure Front Door](./architecture.md#azure-front-door-future-option) for detailed feature comparison and trade-offs.
+
+### Service Mesh - Istio (Optional)
+
+| Cost Type | Impact | Notes |
+|-----------|--------|-------|
+| **Sidecar Overhead** | +10-15% CPU/memory per pod | Every pod gets Envoy proxy |
+| **Control Plane** | ~2 vCPU, 4GB RAM | istiod, always running |
+| **Additional Latency** | ~1-3ms per hop | Proxy overhead |
+
+**When worth the cost**: Zero-trust security requirements, complex traffic routing (canary, A/B), microservices with 10+ services.
+
+### Azure Arc (Optional)
+
+| Component | Cost | Notes |
+|-----------|------|-------|
+| **Control Plane** | Free | Arc agent and basic management |
+| **GitOps (Flux)** | Free - $2/cluster/month | Basic vs advanced features |
+| **Azure Policy** | Free | Included with Arc |
+| **Azure Monitor** | Standard LA pricing | ~$2.30/GB ingested |
+| **Arc Data Services** | Per-vCore pricing | If using Arc-enabled SQL/PostgreSQL |
+
+**When worth the cost**: Managing on-premises or multi-cloud Kubernetes clusters alongside AKS.
+
+### Kubeflow (Optional)
+
+| Component | Estimated Monthly Cost | Notes |
+|-----------|----------------------|-------|
+| **Control Plane** | $100-200 | Always-on pods (pipelines, UI, etc.) |
+| **Pipeline Execution** | Variable | Compute during pipeline runs |
+| **Model Serving (KServe)** | $50-500+ | Depends on inference load |
+| **Storage** | $20-100 | Artifacts, models, metadata |
+
+**Total estimated**: $200-500/month base + GPU/compute usage
+
+**When worth the cost**: Complex ML pipelines, distributed training, model serving at scale, dedicated ML platform team.
+
+### Multi-Region Deployment (Optional)
+
+| Component | Cost Multiplier | Notes |
+|-----------|-----------------|-------|
+| **AKS Clusters** | 2x | Duplicate cluster per region |
+| **Networking** | 2x | VNets, AGC, private endpoints |
+| **Data Replication** | +20-40% | Cross-region egress, geo-redundant storage |
+| **Front Door** | +$35-330/month | Required for global routing |
+| **Monitoring** | +50% | Additional region's telemetry |
+
+**Total estimated**: 80-120% increase over single-region
+
+**When worth the cost**: < 4hr RTO requirements, global user base, regulatory data residency, 99.99%+ SLA needs.
+
+### Cost Planning for Scale
+
+When scaling the platform, consider these cost multipliers:
+
+| Scale Factor | Impact | Mitigation |
+|--------------|--------|------------|
+| Multi-region | 2-3x base infrastructure | Use active-passive for DR |
+| GPU workloads | $1-5/hour per GPU | Scale to zero when idle |
+| Front Door Premium | +$330/month base | Start with Standard tier |
+| Increased traffic | Per-request charges | Implement caching strategies |
+
 This comprehensive cost monitoring solution provides complete visibility into Azure spending, enabling proactive cost management and budget control for the AKS GitOps platform.

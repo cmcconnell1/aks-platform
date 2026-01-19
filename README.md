@@ -102,6 +102,12 @@ graph TB
 - **Cost optimization** monitoring with Infracost integration
 - **Automated CI/CD** with GitHub Actions workflows
 
+### Future Options (Not Currently Implemented)
+- **Azure Front Door** - Global load balancing, WAF, edge caching, multi-region HA (see [Architecture Guide](docs/architecture.md#azure-front-door-future-option))
+- **Service Mesh (Istio)** - Advanced traffic management, mTLS, observability
+- **Azure Arc** - Hybrid cloud and multi-cluster management
+- **Kubeflow** - Advanced ML pipelines and model serving
+
 ## What This Creates
 
 This Terraform configuration creates a **complete, production-ready AKS platform**.
