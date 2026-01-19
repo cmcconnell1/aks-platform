@@ -55,8 +55,11 @@ terraform/
 │       └── backend.conf            # Prod state backend config
 └── modules/
     ├── aks/                        # AKS cluster module
+    ├── agc/                        # Application Gateway for Containers
     ├── networking/                 # Virtual network module
     ├── security/                   # Key Vault, identities
+    ├── container_registry/         # Azure Container Registry
+    ├── cert_manager/               # Certificate management
     ├── monitoring/                 # Prometheus, Grafana
     ├── gitops/                     # ArgoCD
     └── ai_tools/                   # JupyterHub, MLflow

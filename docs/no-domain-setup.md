@@ -113,13 +113,22 @@ When accessing applications, you'll see SSL warnings:
 2. Click "visit this website"
 3. Click "Visit Website"
 
-### Alternative: Disable SSL Redirect (Optional)
+### Alternative: Use HTTP Only (Optional)
 
-If SSL warnings are problematic, you can disable SSL redirect:
+If SSL warnings are problematic, you can configure the Gateway to use HTTP only:
 
 ```yaml
-# In ingress annotations, change:
-appgw.ingress.kubernetes.io/ssl-redirect: "false"
+# Update the Gateway listener to use HTTP instead of HTTPS
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+spec:
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
+      allowedRoutes:
+        namespaces:
+          from: All
 ```
 
 Then access via HTTP:

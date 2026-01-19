@@ -139,27 +139,29 @@ terraform plan -var-file="terraform.tfvars"
 terraform apply -var-file="terraform.tfvars"
 ```
 
-#### Phase 2: Platform Services
+#### Phase 2: Verify Platform Services
 ```bash
+# Platform services are deployed automatically via Terraform Helm releases
+
 # 1. Get AKS credentials
 az aks get-credentials --resource-group rg-your-project-dev --name aks-your-project-dev
 
-# 2. Deploy ArgoCD
-kubectl apply -k platform/argocd/
+# 2. Verify ArgoCD is running
+kubectl get pods -n argocd
 
-# 3. Deploy monitoring stack
-kubectl apply -k platform/monitoring/
+# 3. Verify monitoring stack is running
+kubectl get pods -n monitoring
 
-# 4. Deploy AI/ML tools (if enabled)
-kubectl apply -k platform/ai-tools/
+# 4. Verify AI/ML tools (if enabled)
+kubectl get pods -n ai-tools
 ```
 
-#### Phase 3: Application Deployment
+#### Phase 3: Access Platform Services
 ```bash
-# 1. Configure ArgoCD applications
-kubectl apply -f applications/
+# 1. Get ArgoCD admin password
+kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
 
-# 2. Verify deployments
+# 2. Verify ArgoCD applications
 kubectl get applications -n argocd
 ```
 

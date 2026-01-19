@@ -47,6 +47,8 @@ graph TB
         C --> O[monitoring/]
         C --> P[gitops/]
         C --> Q[ai_tools/]
+        C --> R[agc/]
+        C --> S[cert_manager/]
     end
 
     style A fill:#fff3e0,stroke:#e65100,stroke-width:2px
@@ -68,6 +70,8 @@ graph TB
     style O fill:#fff9c4,stroke:#ffa000
     style P fill:#b3e5fc,stroke:#0277bd
     style Q fill:#f8bbd9,stroke:#c2185b
+    style R fill:#fff3e0,stroke:#e65100
+    style S fill:#e8eaf6,stroke:#3f51b5
 ```
 
 ## Key Features

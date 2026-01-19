@@ -476,7 +476,7 @@ kubectl get pods --all-namespaces | grep -v Running
 
 # Service health
 curl -f https://your-domain.com/health
-kubectl get ingress --all-namespaces
+kubectl get gateway,httproutes --all-namespaces
 ```
 
 This comprehensive strategy ensures that updates to the monolithic platform codebase can be performed safely in production with minimal risk of service interruption through progressive deployment, comprehensive monitoring, and robust rollback procedures.

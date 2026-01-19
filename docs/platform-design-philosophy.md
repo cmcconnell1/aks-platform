@@ -20,11 +20,21 @@ This project uses a **monorepo approach** that combines infrastructure, platform
 
 ```
 aks-platform/
-├── terraform/           # Infrastructure as Code
-├── helm-charts/         # Platform services (ArgoCD, monitoring, AI/ML)
-├── applications/        # Application deployment manifests
-├── docs/               # Comprehensive documentation
-└── scripts/            # Automation and utilities
+├── terraform/           # Infrastructure as Code (includes Helm deployments)
+│   ├── modules/         # Reusable infrastructure and platform modules
+│   │   ├── aks/         # AKS cluster configuration
+│   │   ├── agc/         # Application Gateway for Containers
+│   │   ├── networking/  # Virtual network and subnets
+│   │   ├── security/    # Key Vault, managed identities
+│   │   ├── container_registry/  # Azure Container Registry
+│   │   ├── cert_manager/  # Certificate management
+│   │   ├── monitoring/  # Prometheus, Grafana via Helm
+│   │   ├── gitops/      # ArgoCD deployment via Helm
+│   │   └── ai_tools/    # JupyterHub, MLflow via Helm
+│   └── environments/    # Environment-specific configurations (dev, staging, prod)
+├── .github/workflows/   # CI/CD pipelines
+├── docs/                # Comprehensive documentation
+└── scripts/             # Automation and utilities
 ```
 
 ### Alternative Approaches Considered

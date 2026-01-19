@@ -59,7 +59,7 @@ jobs:
       TF_VAR_environment: ${{ github.event.inputs.environment || 'dev' }}
       TF_VAR_vnet_address_space: '["10.0.0.0/16"]'
       TF_VAR_aks_subnet_address_prefix: "10.0.1.0/24"
-      TF_VAR_app_gateway_subnet_address_prefix: "10.0.2.0/24"
+      TF_VAR_agc_subnet_address_prefix: "10.0.2.0/24"
       TF_VAR_private_endpoint_subnet_address_prefix: "10.0.3.0/24"
       TF_VAR_aks_node_count: 2
       TF_VAR_aks_node_vm_size: "Standard_D2s_v3"
@@ -79,7 +79,7 @@ jobs:
       TF_VAR_letsencrypt_email: ""
       TF_VAR_enable_letsencrypt_staging: true
       TF_VAR_enable_letsencrypt_prod: false
-      TF_VAR_enable_application_gateway: true
+      TF_VAR_enable_agc: true
       TF_VAR_enable_argocd: true
       TF_VAR_argocd_namespace: "argocd"
       TF_VAR_enable_ai_tools: true

@@ -427,9 +427,9 @@ docker push $(terraform output -raw container_registry_login_server)/hello-world
 
 3. **ArgoCD not accessible**:
    ```bash
-   # Check ingress
-   kubectl get ingress -n argocd
-   
+   # Check HTTPRoute
+   kubectl get httproute -n argocd
+
    # Check service
    kubectl get svc -n argocd
    ```
@@ -439,9 +439,6 @@ docker push $(terraform output -raw container_registry_login_server)/hello-world
 ```bash
 # Get all Gateway API resources
 kubectl get gateways,httproutes,referencegrants -A
-
-# Get all ingresses (legacy)
-kubectl get ingress --all-namespaces
 
 # Check AGC status
 az network alb list --output table
