@@ -2,9 +2,12 @@
 
 A comprehensive Terraform-based GitOps platform for Azure Kubernetes Service, demonstrating production-ready DevOps practices, cloud security principles, and modern application deployment workflows.
 
+> **Note**: This project uses **custom Terraform modules** for educational and demonstration purposes. For production deployments, consider using [Azure Verified Modules (AVM)](#terraform-module-approach) - Microsoft's official, validated Terraform modules. See the [Terraform Module Approach](#terraform-module-approach) section for details.
+
 ## Table of Contents
 
 - [Project Overview](#project-overview)
+- [Terraform Module Approach](#terraform-module-approach)
 - [Architecture](#architecture)
 - [Key Features](#key-features)
 - [What This Creates](#what-this-creates)
@@ -23,6 +26,76 @@ This project showcases:
 - **AI/ML platform** with JupyterHub, MLflow, and GPU support
 - **Cloud security** best practices and compliance
 - **Modular architecture** for reusable infrastructure components
+
+## Terraform Module Approach
+
+### Custom Modules (This Project)
+
+This project uses **custom-built local Terraform modules** for educational and demonstration purposes:
+
+```
+terraform/modules/
+├── aks/                 # Custom: azurerm_kubernetes_cluster
+├── networking/          # Custom: azurerm_virtual_network, subnets, NSGs
+├── security/            # Custom: azurerm_key_vault, managed identities
+├── agc/                 # Custom: azurerm_application_gateway_for_containers
+├── container_registry/  # Custom: azurerm_container_registry
+├── monitoring/          # Custom: helm_release (Prometheus, Grafana, Loki)
+├── gitops/              # Custom: helm_release (ArgoCD)
+├── ai_tools/            # Custom: helm_release (JupyterHub, MLflow)
+└── cert_manager/        # Custom: helm_release + kubectl_manifest
+```
+
+### Production Recommendation: Azure Verified Modules
+
+For **production deployments**, Microsoft recommends using **Azure Verified Modules (AVM)**:
+
+```hcl
+# Example: Using Azure Verified Module for AKS
+module "aks" {
+  source  = "Azure/avm-res-containerservice-managedcluster/azurerm"
+  version = "0.1.0"
+  # ... configuration
+}
+```
+
+### Module Comparison
+
+| Aspect | This Project (Custom) | Azure Verified Modules | Azure/aks/azurerm (Community) |
+|--------|:--------------------:|:----------------------:|:-----------------------------:|
+| **Purpose** | Demo / Learning | Production | Production |
+| **Maintainer** | You | Microsoft | Community |
+| **Validation** | Self-validated | Microsoft-validated | Community-validated |
+| **Updates** | Manual | Follows Azure releases | Regular community updates |
+| **Best Practices** | Implemented manually | Built-in | Built-in |
+| **Flexibility** | Full control | Configurable | Highly configurable |
+| **Support** | Community | Microsoft supported | Community supported |
+| **Registry** | Local modules | Terraform Registry | Terraform Registry |
+
+### When to Use Each Approach
+
+| Use Case | Recommended Approach |
+|----------|---------------------|
+| Learning Terraform and Azure | **This project** (custom modules) |
+| Understanding AKS internals | **This project** (custom modules) |
+| Proof of concept / Demo | **This project** (custom modules) |
+| Production workloads | **Azure Verified Modules** |
+| Enterprise with compliance | **Azure Verified Modules** |
+| Existing community patterns | **Azure/aks/azurerm** |
+
+### Migration Path
+
+To migrate to Azure Verified Modules for production:
+
+1. **AKS Cluster**: Replace `./modules/aks` with `Azure/avm-res-containerservice-managedcluster/azurerm`
+2. **Virtual Network**: Replace `./modules/networking` with `Azure/avm-res-network-virtualnetwork/azurerm`
+3. **Key Vault**: Replace `./modules/security` with `Azure/avm-res-keyvault-vault/azurerm`
+4. **Container Registry**: Replace `./modules/container_registry` with `Azure/avm-res-containerregistry-registry/azurerm`
+
+**Resources:**
+- [Azure Verified Modules](https://aka.ms/avm) - Microsoft's official Terraform modules
+- [AVM Module Index](https://azure.github.io/Azure-Verified-Modules/indexes/terraform/) - Full list of available modules
+- [Azure/aks/azurerm](https://registry.terraform.io/modules/Azure/aks/azurerm) - Popular community AKS module
 
 ## Architecture
 
