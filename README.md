@@ -360,6 +360,7 @@ python3 scripts/manage-dependencies.py freeze
 |-------|-------------|
 | [**Architecture Guide**](docs/architecture.md) | System architecture and design decisions |
 | [**Platform Design Philosophy**](docs/platform-design-philosophy.md) | Design decisions and trade-offs |
+| [**Cluster Access Guide**](docs/cluster-access-guide.md) | Environment-specific cluster access (public vs private) |
 | [**Security Guide**](docs/security.md) | Security best practices and configurations |
 | [**CI/CD Guide**](docs/cicd-guide.md) | GitHub Actions workflows and automation |
 | [**Helm Management Guide**](docs/helm-management-guide.md) | Helm chart management and GitOps workflows |

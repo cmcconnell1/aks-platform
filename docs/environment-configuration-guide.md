@@ -93,7 +93,7 @@ terraform/
 |---------|-----|---------|------|-------|
 | `vnet_address_space` | 10.0.0.0/16 | 10.1.0.0/16 | 10.10.0.0/16 | Unique per env |
 | `aks_subnet_address_prefix` | 10.0.1.0/24 | 10.1.1.0/24 | 10.10.1.0/24 | AKS nodes |
-| `enable_private_cluster` | true | true | true | Private API server |
+| `enable_private_cluster` | false | false | true | Private API server (prod only) |
 
 ### Security Configuration
 
@@ -533,6 +533,7 @@ tags = {
 
 ## Related Documentation
 
+- [Cluster Access Guide](./cluster-access-guide.md)
 - [Deployment Guide](./deployment-guide.md)
 - [AKS Cluster Upgrade Guide](./aks-cluster-upgrade-guide.md)
 - [Security Guide](./security.md)
