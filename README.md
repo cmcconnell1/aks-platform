@@ -364,6 +364,7 @@ python3 scripts/manage-dependencies.py freeze
 | [**CI/CD Guide**](docs/cicd-guide.md) | GitHub Actions workflows and automation |
 | [**Helm Management Guide**](docs/helm-management-guide.md) | Helm chart management and GitOps workflows |
 | [**Cost Monitoring Guide**](docs/cost-monitoring-guide.md) | Real-time Azure cost monitoring and budget alerts |
+| [**AI/ML Workloads Guide**](docs/ai-ml-workloads-guide.md) | GPU node scheduling and AI/ML platform usage |
 
 ### Infrastructure Management
 | Script | Description | Usage |
