@@ -104,23 +104,62 @@ graph TB
 
 ## What This Creates
 
-This Terraform configuration creates a **complete, production-ready AKS platform** including:
+This Terraform configuration creates a **complete, production-ready AKS platform**.
 
-### Core Infrastructure
-- **Resource Group** - Dedicated resource group for all resources
-- **Virtual Network** - Complete VNet with 4 subnets (AKS, AGC, Private Endpoints)
-- **AKS Cluster** - Multi-node pool cluster with system, user, and AI/ML (GPU) node pools
-- **Application Gateway for Containers** - Cloud-native load balancing with Gateway API
-- **Container Registry** - Private container registry with private endpoints
-- **Key Vault** - Secrets and certificate management with SSL certificates
-- **cert-manager** - Automatic SSL certificate management with Let's Encrypt integration
-- **Monitoring** - Log Analytics, Application Insights, Prometheus, Grafana
+### Azure Infrastructure
 
-### Platform Services (via Helm)
-- **ArgoCD** - GitOps platform for application deployment
-- **JupyterHub** - Data science platform with GPU support
-- **MLflow** - ML lifecycle management with PostgreSQL and MinIO
-- **Monitoring Stack** - Prometheus, Grafana, Loki for observability
+| Component | Description |
+|-----------|-------------|
+| **Resource Group** | Dedicated resource group for all resources |
+| **Virtual Network** | Complete VNet with 4 subnets (AKS, AGC, Private Endpoints, Services) |
+| **AKS Cluster** | Multi-node pool cluster (system, user, AI/ML with GPU) |
+| **Application Gateway for Containers** | Cloud-native load balancing with Gateway API |
+| **Container Registry** | Private container registry with private endpoints |
+| **Key Vault** | Secrets and certificate management |
+| **Log Analytics** | Centralized logging and monitoring |
+
+### AKS Add-ons (Azure-Managed)
+
+These are first-party Azure features enabled on the AKS cluster. Azure manages upgrades and availability.
+
+| Add-on | Description | Benefits |
+|--------|-------------|----------|
+| **Azure Monitor (OMS Agent)** | Container Insights for metrics and logs | Native Azure portal integration |
+| **Azure Policy** | Kubernetes policy enforcement | Compliance and governance |
+| **Key Vault Secrets Provider** | Mount secrets from Azure Key Vault | Secure secret management with rotation |
+| **Workload Identity** | Pod-to-Azure authentication via OIDC | Secretless authentication to Azure services |
+
+### AKS Cluster Features
+
+| Feature | Description |
+|---------|-------------|
+| **Azure CNI** | Advanced networking with VNet integration |
+| **Azure Network Policy** | Pod-to-pod traffic control |
+| **Azure RBAC** | Azure AD for Kubernetes authorization |
+| **Private Cluster** | Private API server (production only) |
+| **Cluster Autoscaler** | Automatic node scaling based on demand |
+
+### Platform Services (Helm-Managed)
+
+Self-managed services deployed via Terraform Helm provider. You control versions and configuration.
+
+| Service | Chart | Namespace | Description |
+|---------|-------|-----------|-------------|
+| **ArgoCD** | `argo/argo-cd` | `argocd` | GitOps continuous delivery |
+| **Prometheus** | `kube-prometheus-stack` | `monitoring` | Metrics and alerting |
+| **Grafana** | (included above) | `monitoring` | Dashboards and visualization |
+| **Loki** | `grafana/loki` | `monitoring` | Log aggregation |
+| **cert-manager** | `jetstack/cert-manager` | `cert-manager` | TLS certificate automation |
+| **JupyterHub** | `jupyterhub/jupyterhub` | `ai-tools` | Multi-user notebook server |
+| **MLflow** | `community-charts/mlflow` | `ai-tools` | ML experiment tracking |
+
+### Node Pools
+
+| Pool | VM Size | Purpose | Labels |
+|------|---------|---------|--------|
+| **System** | Standard_D2s_v3 | Critical add-ons, kube-system | `node-type=system` |
+| **User** | Standard_D2s_v3 | Application workloads | `node-type=user` |
+| **AI/ML** | Standard_NC6s_v3 | GPU workloads | `node-type=ai`, `accelerator=nvidia-gpu` |
 
 ## Prerequisites
 

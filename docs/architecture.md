@@ -97,7 +97,64 @@ graph TB
 - **Private Endpoints**: Secure connectivity
 - **Application Gateway for Containers**: Cloud-native load balancing with Gateway API
 
+### AKS Cluster Configuration
+
+#### **AKS Add-ons (Azure-Managed)**
+
+These are first-party Azure features enabled directly on the AKS cluster. Azure manages upgrades and availability.
+
+| Add-on | Purpose | Configuration |
+|--------|---------|---------------|
+| **OMS Agent** | Azure Monitor Container Insights | `oms_agent { log_analytics_workspace_id = "..." }` |
+| **Azure Policy** | Kubernetes policy enforcement | `azure_policy_enabled = true` |
+| **Key Vault Secrets Provider** | Mount secrets from Key Vault | `key_vault_secrets_provider { secret_rotation_enabled = true }` |
+
+```hcl
+# From terraform/modules/aks/main.tf
+oms_agent {
+  log_analytics_workspace_id = var.log_analytics_workspace_id
+}
+
+azure_policy_enabled = true
+
+key_vault_secrets_provider {
+  secret_rotation_enabled = true
+}
+```
+
+#### **AKS Cluster Features**
+
+Core cluster capabilities enabled via Terraform:
+
+| Feature | Purpose | Configuration |
+|---------|---------|---------------|
+| **Workload Identity** | Pod-to-Azure authentication | `workload_identity_enabled = true` |
+| **OIDC Issuer** | Federated identity support | `oidc_issuer_enabled = true` |
+| **Azure RBAC** | Azure AD for K8s authorization | `azure_rbac_enabled = true` |
+| **Network Policy** | Pod-to-pod traffic control | `network_policy = "azure"` |
+| **Private Cluster** | Private API server (prod only) | `private_cluster_enabled = var.enable_private_cluster` |
+
+#### **Node Pools**
+
+| Pool | Purpose | VM Size | Labels | Taints |
+|------|---------|---------|--------|--------|
+| **System** | Critical add-ons | Standard_D2s_v3 | `node-type=system` | `CriticalAddonsOnly=true:NoSchedule` |
+| **User** | Application workloads | Standard_D2s_v3 | `node-type=user` | None |
+| **AI** | GPU/ML workloads | Standard_NC6s_v3 | `node-type=ai`, `accelerator=nvidia-gpu` | `nvidia.com/gpu=true:NoSchedule` |
+
 ### Platform Layer (Helm-Managed)
+
+These are self-managed services deployed via Helm charts. You control versions, configuration, and upgrades.
+
+| Service | Helm Chart | Namespace | Purpose |
+|---------|------------|-----------|---------|
+| **ArgoCD** | `argo/argo-cd` | `argocd` | GitOps continuous delivery |
+| **Prometheus** | `prometheus-community/kube-prometheus-stack` | `monitoring` | Metrics collection and alerting |
+| **Grafana** | (included in prometheus-stack) | `monitoring` | Dashboards and visualization |
+| **Loki** | `grafana/loki` | `monitoring` | Log aggregation |
+| **cert-manager** | `jetstack/cert-manager` | `cert-manager` | TLS certificate automation |
+| **JupyterHub** | `jupyterhub/jupyterhub` | `ai-tools` | Multi-user notebook server |
+| **MLflow** | `community-charts/mlflow` | `ai-tools` | ML experiment tracking |
 
 #### **GitOps Platform**
 
