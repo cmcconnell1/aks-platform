@@ -364,25 +364,95 @@ Add to `.gitignore`:
 *.key
 ```
 
-#### **Azure Key Vault Integration**
+#### **Azure Key Vault Integration with Workload Identity**
+
+The platform uses Azure Key Vault CSI driver with Workload Identity for secure, secretless authentication.
+
+**Step 1: Create SecretProviderClass**
 ```yaml
-# CSI Secret Store driver configuration
 apiVersion: secrets-store.csi.x-k8s.io/v1
 kind: SecretProviderClass
 metadata:
   name: app-secrets
+  namespace: your-namespace
 spec:
   provider: azure
   parameters:
     usePodIdentity: "false"
-    useVMManagedIdentity: "true"
-    userAssignedIdentityID: "CLIENT_ID"
-    keyvaultName: "your-keyvault"
+    clientID: "${WORKLOAD_IDENTITY_CLIENT_ID}"  # From managed identity
+    keyvaultName: "kv-aks-platform-${ENVIRONMENT}"
+    tenantId: "${AZURE_TENANT_ID}"
     objects: |
       array:
         - |
           objectName: database-password
           objectType: secret
+        - |
+          objectName: api-key
+          objectType: secret
+  # Optional: Sync to Kubernetes Secret
+  secretObjects:
+    - secretName: app-secrets-k8s
+      type: Opaque
+      data:
+        - objectName: database-password
+          key: DB_PASSWORD
+```
+
+**Step 2: Create ServiceAccount with Workload Identity**
+```yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: app-sa
+  namespace: your-namespace
+  annotations:
+    azure.workload.identity/client-id: "${WORKLOAD_IDENTITY_CLIENT_ID}"
+  labels:
+    azure.workload.identity/use: "true"
+```
+
+**Step 3: Configure Pod to Use Secrets**
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: app-pod
+  namespace: your-namespace
+  labels:
+    azure.workload.identity/use: "true"
+spec:
+  serviceAccountName: app-sa
+  containers:
+    - name: app
+      image: your-app:latest
+      volumeMounts:
+        - name: secrets-store
+          mountPath: "/mnt/secrets"
+          readOnly: true
+      env:
+        # Use synced Kubernetes secret
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets-k8s
+              key: DB_PASSWORD
+  volumes:
+    - name: secrets-store
+      csi:
+        driver: secrets-store.csi.k8s.io
+        readOnly: true
+        volumeAttributes:
+          secretProviderClass: app-secrets
+```
+
+**Key Vault Access Policy Setup**
+```bash
+# Grant managed identity access to Key Vault secrets
+az keyvault set-policy \
+  --name "kv-aks-platform-${ENVIRONMENT}" \
+  --object-id "${WORKLOAD_IDENTITY_OBJECT_ID}" \
+  --secret-permissions get list
 ```
 
 #### **Secret Rotation**

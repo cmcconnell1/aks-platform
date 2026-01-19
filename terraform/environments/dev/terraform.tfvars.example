@@ -27,6 +27,8 @@ ai_node_count      = 1
 # Security Configuration
 enable_private_endpoints = true
 authorized_ip_ranges     = [] # Add your IP ranges here
+# Run command enabled for dev debugging (disable in production)
+enable_run_command       = true
 
 # SSL Certificate Configuration
 create_demo_ssl_certificate = true

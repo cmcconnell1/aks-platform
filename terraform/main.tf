@@ -140,6 +140,7 @@ module "aks" {
   key_vault_id                        = module.security.key_vault_id
   user_assigned_identity_id           = module.security.user_assigned_identity_id
   user_assigned_identity_principal_id = module.security.user_assigned_identity_principal_id
+  enable_run_command                  = var.enable_run_command
 
   # Container Registry
   container_registry_id = module.container_registry.registry_id

@@ -125,9 +125,12 @@ These are first-party Azure features enabled on the AKS cluster. Azure manages u
 | Add-on | Description | Benefits |
 |--------|-------------|----------|
 | **Azure Monitor (OMS Agent)** | Container Insights for metrics and logs | Native Azure portal integration |
+| **Microsoft Defender** | Runtime threat protection and vulnerability scanning | Security alerts and recommendations |
 | **Azure Policy** | Kubernetes policy enforcement | Compliance and governance |
-| **Key Vault Secrets Provider** | Mount secrets from Azure Key Vault | Secure secret management with rotation |
+| **Key Vault Secrets Provider** | Mount secrets from Azure Key Vault | Secure secret management with auto-rotation |
 | **Workload Identity** | Pod-to-Azure authentication via OIDC | Secretless authentication to Azure services |
+| **Image Cleaner** | Automatic cleanup of unused images | Disk space management (48hr interval) |
+| **Storage CSI Drivers** | Blob, Disk, File, and Snapshot support | Full Azure storage integration |
 
 ### AKS Cluster Features
 

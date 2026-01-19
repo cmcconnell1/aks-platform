@@ -121,6 +121,12 @@ variable "enable_private_endpoints" {
   default     = true
 }
 
+variable "enable_run_command" {
+  description = "Enable AKS run command (disable for production security hardening)"
+  type        = bool
+  default     = false
+}
+
 # SSL Certificate variables
 variable "create_demo_ssl_certificate" {
   description = "Create a demo SSL certificate for testing"

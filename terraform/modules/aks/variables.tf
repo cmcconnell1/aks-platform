@@ -181,6 +181,13 @@ variable "ai_max_surge" {
   default     = "33%"
 }
 
+# Security settings
+variable "enable_run_command" {
+  description = "Enable run command on AKS cluster (disable for production security)"
+  type        = bool
+  default     = false
+}
+
 # Autoscaler profile
 variable "autoscaler_profile" {
   description = "Autoscaler profile configuration"

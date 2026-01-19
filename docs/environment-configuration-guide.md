@@ -103,6 +103,21 @@ terraform/
 | `enable_cert_manager` | false | false | true | Let's Encrypt |
 | `enable_letsencrypt_prod` | false | false | true | Production certs |
 | `enable_agc` | true | true | true | AGC enabled |
+| `enable_run_command` | true | false | false | Disable in prod for security |
+
+### AKS Add-ons (Always Enabled)
+
+These Azure-managed add-ons are enabled on all environments:
+
+| Add-on | Purpose |
+|--------|---------|
+| Azure Monitor (OMS Agent) | Container Insights, metrics, logs |
+| Microsoft Defender | Runtime threat protection, vulnerability scanning |
+| Azure Policy | Kubernetes policy enforcement |
+| Key Vault Secrets Provider | CSI driver with auto-rotation |
+| Workload Identity | Pod-to-Azure OIDC authentication |
+| Image Cleaner | Automatic stale image cleanup (48hr) |
+| Storage CSI Drivers | Blob, Disk, File, Snapshot support |
 
 ### Upgrade Configuration
 

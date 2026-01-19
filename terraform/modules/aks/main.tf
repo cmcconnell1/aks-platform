@@ -70,16 +70,49 @@ resource "azurerm_kubernetes_cluster" "main" {
     azure_rbac_enabled     = true
   }
 
-  # Add-ons
+  # =============================================================================
+  # AKS Add-ons (Azure-Managed)
+  # =============================================================================
+
+  # Azure Monitor Container Insights
+  # Provides metrics, logs, and container-level monitoring
   oms_agent {
     log_analytics_workspace_id = var.log_analytics_workspace_id
   }
 
+  # Azure Policy for Kubernetes
+  # Enforces organizational standards and compliance
   azure_policy_enabled = true
 
+  # Azure Key Vault Secrets Provider (CSI Driver)
+  # Mounts secrets from Key Vault as volumes
   key_vault_secrets_provider {
-    secret_rotation_enabled = true
+    secret_rotation_enabled  = true
+    secret_rotation_interval = "2m"
   }
+
+  # Microsoft Defender for Containers
+  # Runtime threat protection, vulnerability scanning, security alerts
+  microsoft_defender {
+    log_analytics_workspace_id = var.log_analytics_workspace_id
+  }
+
+  # Image Cleaner
+  # Automatically removes unused images to free up disk space
+  image_cleaner_enabled        = true
+  image_cleaner_interval_hours = 48
+
+  # Storage Profile - CSI Drivers
+  storage_profile {
+    blob_driver_enabled         = true
+    disk_driver_enabled         = true
+    file_driver_enabled         = true
+    snapshot_controller_enabled = true
+  }
+
+  # Disable run command in production for security
+  # Prevents remote command execution on nodes
+  run_command_enabled = var.enable_run_command
 
   # Auto-scaler profile
   auto_scaler_profile {

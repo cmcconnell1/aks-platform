@@ -106,20 +106,48 @@ These are first-party Azure features enabled directly on the AKS cluster. Azure 
 | Add-on | Purpose | Configuration |
 |--------|---------|---------------|
 | **OMS Agent** | Azure Monitor Container Insights | `oms_agent { log_analytics_workspace_id = "..." }` |
+| **Microsoft Defender** | Runtime threat protection, vulnerability scanning | `microsoft_defender { log_analytics_workspace_id = "..." }` |
 | **Azure Policy** | Kubernetes policy enforcement | `azure_policy_enabled = true` |
 | **Key Vault Secrets Provider** | Mount secrets from Key Vault | `key_vault_secrets_provider { secret_rotation_enabled = true }` |
+| **Image Cleaner** | Automatic cleanup of stale images | `image_cleaner_enabled = true` |
+| **Storage CSI Drivers** | Azure Blob, Disk, File storage | `storage_profile { blob_driver_enabled = true ... }` |
 
 ```hcl
 # From terraform/modules/aks/main.tf
+
+# Azure Monitor Container Insights
 oms_agent {
   log_analytics_workspace_id = var.log_analytics_workspace_id
 }
 
+# Microsoft Defender for Containers
+microsoft_defender {
+  log_analytics_workspace_id = var.log_analytics_workspace_id
+}
+
+# Azure Policy for Kubernetes
 azure_policy_enabled = true
 
+# Key Vault Secrets Provider (CSI Driver)
 key_vault_secrets_provider {
-  secret_rotation_enabled = true
+  secret_rotation_enabled  = true
+  secret_rotation_interval = "2m"
 }
+
+# Image Cleaner
+image_cleaner_enabled        = true
+image_cleaner_interval_hours = 48
+
+# Storage Profile - CSI Drivers
+storage_profile {
+  blob_driver_enabled         = true
+  disk_driver_enabled         = true
+  file_driver_enabled         = true
+  snapshot_controller_enabled = true
+}
+
+# Disable run command in production
+run_command_enabled = var.enable_run_command
 ```
 
 #### **AKS Cluster Features**
